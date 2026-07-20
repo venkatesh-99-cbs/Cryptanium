@@ -1,0 +1,12 @@
+# Environment files
+backend/.env
+
+# Virtual environment
+backend/.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# SQLite database
+backend/cryptanium.db
