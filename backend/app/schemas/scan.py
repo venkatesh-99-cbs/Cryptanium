@@ -32,6 +32,7 @@ class FindingItem(BaseModel):
     description: str
     file_path: str
     line_number: int
+    tool: str = ""
 
 
 class ScanSummary(BaseModel):
@@ -46,10 +47,12 @@ class ScanResponse(BaseModel):
     repository_id: str | int | None = None
     repository_name: str = ""
     status: str = "completed"
-    trust_score: int = 85
+    trust_score: int = 0
     findings_count: int = 0
     summary: ScanSummary | None = None
     findings: list[FindingItem] = []
+    ai_summary: str | None = None
+    ai_recommendations: list[dict] = []
     started_at: datetime | None = None
     completed_at: datetime | None = None
     created_at: datetime | None = None

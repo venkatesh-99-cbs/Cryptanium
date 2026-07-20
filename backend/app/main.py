@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, dashboard, health, reports, repositories, scans
+from app.api import auth, dashboard, health, reports, repositories, scans, ai
 from app.core.config import settings
 from app.core.logger import logger
 from app.database.base import Base
@@ -41,6 +41,7 @@ app.include_router(scans.router)
 app.include_router(reports.router)
 app.include_router(dashboard.router)
 app.include_router(health.router)
+app.include_router(ai.router)
 
 
 @app.get("/", summary="Root status check")

@@ -70,9 +70,13 @@ class Scan(Base):
     status: Mapped[str] = mapped_column(String(50), default="pending", nullable=False)
     trust_score: Mapped[int | None] = mapped_column(Integer, default=85, nullable=True)
     findings_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    critical_severity_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     high_severity_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     medium_severity_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     low_severity_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    findings_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ai_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ai_recommendations: Mapped[str | None] = mapped_column(Text, nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime | None] = mapped_column(

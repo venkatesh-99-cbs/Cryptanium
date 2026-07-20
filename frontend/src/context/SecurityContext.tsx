@@ -23,6 +23,7 @@ export interface Finding {
   line_number: number;
   rule_id: string;
   tool?: string;
+  repoId?: string | number;
 }
 
 export interface Scan {
@@ -229,8 +230,30 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       setIsScanning(true);
       setActiveScanRepo(String(repositoryId));
-      const scanResult = await apiClient.createScan(repositoryId);
-      setScans(prev => [scanResult, ...prev]);
+
+      // Look up the repo to get its clone URL
+      const repo = repositories.find(r => r.id === repositoryId);
+      let scanResult: any;
+
+      if (repo?.clone_url) {
+        scanResult = await apiClient.createScanByName(repo.clone_url);
+      } else {
+        scanResult = await apiClient.createScan(repositoryId);
+      }
+
+      // Extract findings if included in the scan response
+      if (scanResult?.findings?.length) {
+        const scanFindings = scanResult.findings.map((f: any) => ({
+          ...f,
+          repoId: String(repositoryId),
+        }));
+        setFindings(prev => [
+          ...prev.filter(f => f.repoId !== String(repositoryId)),
+          ...scanFindings,
+        ]);
+      }
+
+      setScans(prev => [scanResult, ...prev.filter(s => s.scan_id !== scanResult.scan_id)]);
       await loadScans();
       setError(null);
     } catch (err) {
@@ -241,9 +264,9 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setIsScanning(false);
       setActiveScanRepo(null);
     }
-  }, [loadScans]);
+  }, [repositories, loadScans]);
 
-  // Send chat message (AI Assistant)
+  // Send chat message (AI Assistant) — real API call
   const sendChatMessage = useCallback((text: string) => {
     if (!text.trim()) return;
 
@@ -253,19 +276,26 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       text,
       timestamp: new Date().toLocaleTimeString(),
     };
-
     setChatMessages(prev => [...prev, userMsg]);
 
-    // Simulate AI response
-    setTimeout(() => {
+    // Call real AI endpoint
+    apiClient.aiChat(text).then(result => {
       const aiMsg: ChatMessage = {
         id: `msg-ai-${Date.now()}`,
         sender: 'ai',
-        text: 'I am the Cryptanium AI Assistant. I can help you understand your security findings and provide remediation guidance. Please ask me about any vulnerabilities in your scans.',
+        text: result.response,
         timestamp: new Date().toLocaleTimeString(),
       };
       setChatMessages(prev => [...prev, aiMsg]);
-    }, 1000);
+    }).catch(err => {
+      const aiMsg: ChatMessage = {
+        id: `msg-ai-${Date.now()}`,
+        sender: 'ai',
+        text: `Error: ${err instanceof Error ? err.message : 'AI request failed'}`,
+        timestamp: new Date().toLocaleTimeString(),
+      };
+      setChatMessages(prev => [...prev, aiMsg]);
+    });
   }, []);
 
   // Export report

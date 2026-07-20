@@ -1,14 +1,3 @@
-<<<<<<< HEAD
-# Environment files
-.env
-.env.*
-!.env.example
-backend/.env
-
-# Node & Frontend
-node_modules/
-frontend/node_modules/
-=======
 # ==========================
 # Node.js
 # ==========================
@@ -17,40 +6,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-
 frontend/node_modules/
-node_modules/
->>>>>>> 4c943d647601efa36cd1137173b4fede05ccd9b1
-dist/
-build/
-.vite/
 
-<<<<<<< HEAD
-# Python & Backend
-__pycache__/
-*.pyc
-*.pyo
-.venv/
-backend/.venv/
-*.egg-info/
-
-# SQLite & Storage
-*.db
-backend/cryptanium.db
-cryptanium_workspaces/
-
-# Generated Output Reports
-*.pdf
-*.json
-!backend/app/
-
-# Logs & Temporary
-*.log
-tmp/
-temp/
-.DS_Store
-Thumbs.db
-=======
 # ==========================
 # Build Output
 # ==========================
@@ -64,6 +21,8 @@ coverage/
 # ==========================
 .env
 .env.local
+.env.*
+!.env.example
 .env.development.local
 .env.test.local
 .env.production.local
@@ -87,8 +46,6 @@ logs/
 # VS Code
 # ==========================
 .vscode/
-
-# Except recommended workspace settings (optional)
 !.vscode/extensions.json
 !.vscode/settings.json
 
@@ -131,36 +88,27 @@ obj/
 .pnpm-store/
 .npm/
 .yarn/
-.yarn/cache/
-.yarn/unplugged/
 
 # ==========================
 # Testing
 # ==========================
 playwright-report/
 test-results/
-coverage/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.hypothesis/
 
 # ==========================
 # Storybook
 # ==========================
 storybook-static/
-
-# ==========================
-# Generated Files
-# ==========================
-*.cache
-*.pid
-*.seed
-
-# ==========================
-# Misc
-# ==========================
-*.zip
-*.tar
-*.gz
-*.7z
-
 
 # ===================================
 # Python Bytecode & Cache
@@ -182,25 +130,9 @@ ENV/
 # ===================================
 # Python Packaging
 # ===================================
-build/
-dist/
 *.egg-info/
 .eggs/
 pip-wheel-metadata/
-
-# ===================================
-# Test & Coverage
-# ===================================
-.pytest_cache/
-.coverage
-.coverage.*
-htmlcov/
-.tox/
-.nox/
-.mypy_cache/
-.ruff_cache/
-.pyre/
-.hypothesis/
 
 # ===================================
 # FastAPI / Uvicorn
@@ -209,27 +141,7 @@ htmlcov/
 logs/
 
 # ===================================
-# Environment Variables
-# ===================================
-.env
-.env.*
-!.env.example
-
-# ===================================
-# IDE
-# ===================================
-.vscode/
-.idea/
-
-# ===================================
-# OS Files
-# ===================================
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# ===================================
-# SQLite (if used)
+# SQLite
 # ===================================
 *.db
 *.sqlite3
@@ -240,9 +152,7 @@ desktop.ini
 .docker/
 
 # ===================================
-# Temporary Files
+# Generated Reports
 # ===================================
-tmp/
-temp/
-*.tmp
->>>>>>> 4c943d647601efa36cd1137173b4fede05ccd9b1
+reports_storage/
+cryptanium_workspaces/

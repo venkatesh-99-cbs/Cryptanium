@@ -36,9 +36,13 @@ def init_db(target_engine=None):
     if "scans" in inspector.get_table_names():
         columns = {col["name"] for col in inspector.get_columns("scans")}
         missing_columns = {
+            "critical_severity_count": "INTEGER DEFAULT 0",
             "high_severity_count": "INTEGER DEFAULT 0",
             "medium_severity_count": "INTEGER DEFAULT 0",
             "low_severity_count": "INTEGER DEFAULT 0",
+            "findings_json": "TEXT",
+            "ai_summary": "TEXT",
+            "ai_recommendations": "TEXT",
             "started_at": "DATETIME",
             "completed_at": "DATETIME",
             "updated_at": "DATETIME",
