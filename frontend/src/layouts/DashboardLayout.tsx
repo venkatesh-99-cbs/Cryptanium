@@ -32,9 +32,7 @@ const DashboardLayout: React.FC = () => {
       {/* SideNavBar Rail */}
       <aside className="fixed h-full left-0 w-[240px] z-40 border-r border-outline-variant bg-surface-container-low flex flex-col py-lg hidden md:flex">
         <div className="px-md mb-xl flex items-center gap-sm">
-          <div className="w-8 h-8 bg-primary rounded flex items-center justify-center">
-            <span className="material-symbols-outlined text-on-primary text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>shield</span>
-          </div>
+          <img src="/cyyptanium.jpeg" alt="Cryptanium" className="w-10 h-10 rounded object-cover" />
           <div className="flex flex-col">
             <span className="text-headline-md font-headline-md font-bold tracking-tight text-on-background">CRYPTANIUM</span>
             <span className="font-label-caps text-[10px] text-outline uppercase tracking-widest leading-none">Security Suite</span>
@@ -81,7 +79,7 @@ const DashboardLayout: React.FC = () => {
       <div className="md:ml-[240px] flex flex-col min-h-screen relative">
         <header className="h-16 flex justify-between items-center px-margin-desktop bg-background/80 backdrop-blur-xl border-b border-outline-variant sticky top-0 z-50">
           <div className="flex items-center gap-md">
-            <div className="md:hidden font-headline-md font-bold text-on-background mr-md">CRYPTANIUM</div>
+            <div className="md:hidden flex items-center gap-2 font-headline-md font-bold text-on-background mr-md"><img src="/cyyptanium.jpeg" alt="Cryptanium" className="w-8 h-8 rounded object-cover" />CRYPTANIUM</div>
             <div className="hidden md:block">
               {/* Responsive path indicator */}
               <div className="flex items-center text-on-surface-variant font-label-caps gap-xs uppercase tracking-widest text-[10px]">

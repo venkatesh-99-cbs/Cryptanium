@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.9'
 
 services:
   db:
@@ -6,10 +6,10 @@ services:
     container_name: cryptanium-db
     environment:
       POSTGRES_USER: cryptanium
-      POSTGRES_PASSWORD: cryptanium_password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: cryptanium_db
-    ports:
-      - "5432:5432"
+    expose:
+      - "5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -24,17 +24,39 @@ services:
       dockerfile: Dockerfile
     container_name: cryptanium-backend
     environment:
-      - DATABASE_URL=postgresql://cryptanium:cryptanium_password@db:5432/cryptanium_db
-      - SECRET_KEY=cryptanium-production-secret-key-2026
+      - DATABASE_URL=postgresql://cryptanium:${POSTGRES_PASSWORD}@db:5432/cryptanium_db
+      - SECRET_KEY=${SECRET_KEY:?Set SECRET_KEY in .env}
       - APP_ENV=production
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - SCANNER_MAX_CONCURRENCY=${SCANNER_MAX_CONCURRENCY:-2}
     ports:
       - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     depends_on:
       db:
         condition: service_healthy
     volumes:
       - ./reports_storage:/app/reports_storage
 
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0 --port 5173"
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    depends_on:
+      backend:
+        condition: service_healthy
+
 volumes:
   postgres_data:
+  frontend_node_modules:

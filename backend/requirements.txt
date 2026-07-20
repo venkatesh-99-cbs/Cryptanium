@@ -24,3 +24,6 @@ reportlab
 
 pytest
 pytest-asyncio
+semgrep
+bandit
+pip-audit

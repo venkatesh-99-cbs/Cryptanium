@@ -1,5 +1,46 @@
 # Cryptanium
 
+![Cryptanium logo](frontend/public/cyyptanium.jpeg)
+
+Secure every commit. Trust every deployment.
+
+Cryptanium's canonical scanner engine owns repository cloning, temporary workspace management, project/language/package detection, parallel orchestration, Semgrep, Bandit, Gitleaks, pip-audit, npm audit, ESLint, result parsing/normalization, and cleanup. Database, API, JWT, OAuth, AI, reports, and trust scoring are separate application concerns.
+
+## Run with Docker
+
+Copy `.env.example` to `.env`, replace `SECRET_KEY` and `POSTGRES_PASSWORD` with random values, then run `docker compose up --build`. The API is available on port 8000 and the React Vite frontend on port 5173.
+
+## End-to-end usage
+
+### Docker
+
+Open `http://localhost:5173`; API docs are at `http://localhost:8000/docs`. PostgreSQL is internal to Compose and is not exposed publicly.
+
+### Manual development
+
+```bash
+python -m venv .venv
+pip install -r backend/requirements.txt
+uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000
+cd frontend
+npm ci
+npm run dev -- --host 127.0.0.1 --port 5173
+```
+
+### Scanner operation
+
+The engine detects project types and runs compatible tools: Semgrep, Bandit, Gitleaks, pip-audit, npm audit, and ESLint. To run individual tools, include a `tools` array in the scan request:
+
+```json
+{"repository_name":"owner/project","tools":["semgrep","gitleaks"]}
+```
+
+Valid names are `semgrep`, `bandit`, `gitleaks`, `pip-audit`, `npm-audit`, and `eslint`. Omit `tools` to run all compatible scanners. Set `SCANNER_MAX_CONCURRENCY=1` or `2` for Render free-tier stability. Each tool produces an independent result; partial failures do not discard successful findings.
+
+### AI summaries
+
+Set `OPENROUTER_API_KEY` to enable AI summaries and remediation recommendations. Prompts use only normalized findings. If the provider is unavailable, deterministic rule-based remediation is returned instead of fabricated findings.
+
 > **Forging Trust. Securing Code.**
 
 Cryptanium is an AI-powered Repository Trust & Security Analysis Platform that scans GitHub repositories using multiple SAST, secret, and dependency scanners, calculates a transparent **Repository Trust Score**, and generates executive AI summaries and prioritized remediation guidance before deployment.

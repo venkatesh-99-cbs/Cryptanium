@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict, model_validator
 class ScanRequest(BaseModel):
     repository_id: str | int | None = None
     repository_name: str | None = None
+    tools: list[str] | None = None
 
     @model_validator(mode="after")
     def validate_repository_identifier(self) -> "ScanRequest":

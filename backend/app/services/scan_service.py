@@ -1,10 +1,14 @@
+import asyncio
 from datetime import datetime, timezone
 from typing import Any
 from sqlalchemy.orm import Session
 
 from app.database.models import Repository, Scan
 from app.schemas.scan import FindingItem, ScanRequest, ScanResponse, ScanSummary
-from app.services.scanner.scanner_service import scan_repository
+try:  # Supports both ``backend.app`` and the container's ``app`` import mode.
+    from backend.services.scanner.orchestrator import ScanOrchestrator
+except ModuleNotFoundError:
+    from services.scanner.orchestrator import ScanOrchestrator
 from app.utils.exceptions import NotFoundException, ValidationException
 
 
@@ -40,12 +44,27 @@ class ScanService:
         identifier = repo_name_str or repo_id_str or "unknown-repository"
         repo_display_name = repo_name_str or f"repo-{repo_id_str}"
 
-        # Step 1: Call placeholder scanner service
-        raw_scan_results: dict[str, Any] = scan_repository(identifier)
+        # The API delegates scanning to the single canonical engine.  Trust,
+        # AI and report generation intentionally remain outside this service.
+        target_url = identifier
+        if not target_url.startswith(("https://", "http://", "git@")):
+            target_url = f"https://github.com/{target_url}"
+        report = asyncio.run(ScanOrchestrator().scan(target_url, tools=request.tools))
+        raw_scan_results: dict[str, Any] = {
+            "status": report.status.value,
+            "findings": [finding.model_dump() for finding in report.findings],
+            "summary": {
+                "total_findings": report.total_findings,
+                "critical_severity_count": report.critical_count,
+                "high_severity_count": report.high_count,
+                "medium_severity_count": report.medium_count,
+                "low_severity_count": report.low_count,
+            },
+        }
 
         summary_data = raw_scan_results.get("summary", {})
         total_findings = summary_data.get("total_findings", 0)
-        high_sev = summary_data.get("high_severity_count", 0)
+        high_sev = summary_data.get("high_severity_count", 0) + summary_data.get("critical_severity_count", 0)
         med_sev = summary_data.get("medium_severity_count", 0)
         low_sev = summary_data.get("low_severity_count", 0)
 
@@ -58,7 +77,7 @@ class ScanService:
             repository_id=repo_id_str,
             repository_name=repo_display_name,
             status=raw_scan_results.get("status", "completed"),
-            trust_score=raw_scan_results.get("trust_score", 85),
+            trust_score=None,
             findings_count=total_findings,
             high_severity_count=high_sev,
             medium_severity_count=med_sev,
@@ -85,7 +104,7 @@ class ScanService:
             repository_id=repo_id_str if repo_id_str is not None else scan_record.repository_id,
             repository_name=scan_record.repository_name,
             status=scan_record.status,
-            trust_score=scan_record.trust_score or 85,
+            trust_score=scan_record.trust_score or 0,
             findings_count=scan_record.findings_count,
             summary=scan_summary,
             findings=findings_list,

@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -64,7 +65,12 @@ class ScanOrchestrator:
         self._scanner_factory = ScannerFactory(command_runner=self._command_runner)
         self._normalizer = ResultNormalizer()
 
-    async def scan(self, repo_url: str, debug: bool = False) -> ScanReport:
+    async def scan(
+        self,
+        repo_url: str,
+        debug: bool = False,
+        tools: list[str] | None = None,
+    ) -> ScanReport:
         """
         Run the full scan pipeline against *repo_url*.
 
@@ -111,6 +117,9 @@ class ScanOrchestrator:
 
             # ── 4. Select scanners ───────────────────────────────
             scanners = self._scanner_factory.get_scanners(project_info, language_info)
+            if tools:
+                requested = {tool.strip().lower() for tool in tools}
+                scanners = [scanner for scanner in scanners if scanner.name.lower() in requested]
 
             if not scanners:
                 logger.warning("No compatible scanners — returning empty report")
@@ -125,7 +134,16 @@ class ScanOrchestrator:
                 [s.name for s in scanners],
             )
 
-            tasks = [scanner.execute(repo_path) for scanner in scanners]
+            # Render's free tier benefits from bounded concurrency: scanners
+            # are still independent, but never oversubscribe the small CPU.
+            limit = max(1, min(int(os.getenv("SCANNER_MAX_CONCURRENCY", "2")), len(scanners)))
+            semaphore = asyncio.Semaphore(limit)
+
+            async def run_scanner(scanner):
+                async with semaphore:
+                    return await scanner.execute(repo_path)
+
+            tasks = [run_scanner(scanner) for scanner in scanners]
             results: list[ScanResult | BaseException] = await asyncio.gather(
                 *tasks, return_exceptions=True
             )

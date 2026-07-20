@@ -34,6 +34,7 @@ const Landing: React.FC = () => {
           <div className="w-8 h-8 bg-primary-container/20 rounded flex items-center justify-center">
             <span className="material-symbols-outlined text-primary text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>security</span>
           </div>
+          <img src="/cyyptanium.jpeg" alt="Cryptanium" className="w-10 h-10 rounded object-cover" />
           <span className="text-headline-md font-headline-md font-bold tracking-tight text-on-background">CRYPTANIUM</span>
         </div>
         <nav className="hidden md:flex items-center gap-xl">

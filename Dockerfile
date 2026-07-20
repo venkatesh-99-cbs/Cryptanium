@@ -1,5 +1,5 @@
 # Multi-stage Dockerfile for Cryptanium Platform
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -11,10 +11,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     git \
     curl \
+    nodejs \
+    npm \
     && rm -rf /var/lib/apt/lists/*
 
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Keep the scanner runtime self-contained and deterministic.
+RUN pip install --no-cache-dir semgrep bandit pip-audit && \
+    npm install --global eslint && \
+    curl -sSfL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_8.24.2_linux_x64.tar.gz | tar -xz -C /usr/local/bin gitleaks
 
 COPY . .
 

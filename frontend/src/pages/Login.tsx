@@ -70,9 +70,7 @@ const Login: React.FC = () => {
       <main className="relative z-10 w-full max-w-[440px] px-margin-mobile md:px-0">
         {/* Branding Header */}
         <div className="text-center mb-xl">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-surface-container-high border border-outline-variant mb-md shadow-lg">
-            <span className="material-symbols-outlined text-primary text-[40px]" style={{ fontVariationSettings: "'FILL' 1" }}>shield_lock</span>
-          </div>
+          <img src="/cyyptanium.jpeg" alt="Cryptanium" className="inline-block w-24 h-24 rounded-xl object-cover border border-outline-variant mb-md shadow-lg" />
           <h1 className="text-headline-md font-headline-md tracking-tight text-on-background font-bold">CRYPTANIUM</h1>
           <p className="font-label-caps text-label-caps text-primary mt-sm uppercase tracking-widest">Security Suite</p>
         </div>
