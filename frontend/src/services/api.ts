@@ -15,7 +15,7 @@ class APIClient {
   getRepositories() { return this.request('/repositories'); }
   syncRepositories() { return this.request('/repositories/sync', { method: 'POST' }); }
   getScans() { return this.request('/scans'); }
-  createScan(repository_id: string) { return this.request('/scan', { method: 'POST', body: JSON.stringify({ repository_id }) }); }
+  createScan(repository_id: string | number) { return this.request('/scan', { method: 'POST', body: JSON.stringify({ repository_id: String(repository_id) }) }); }
   getReports() { return this.request('/reports'); }
   downloadReport(id: string | number) { return this.url(`/reports/${id}/pdf`); }
 }

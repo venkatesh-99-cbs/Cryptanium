@@ -108,6 +108,17 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return !!localStorage.getItem('cryptanium_token');
   });
 
+  // OAuth returns the JWT in the URL fragment so it is not sent to the server.
+  useEffect(() => {
+    const fragment = new URLSearchParams(window.location.hash.slice(1));
+    const token = fragment.get('access_token');
+    if (token) {
+      apiClient.setToken(token);
+      window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.search}`);
+      setIsAuthenticated(true);
+    }
+  }, []);
+
   // Load current user on mount
   useEffect(() => {
     const loadCurrentUser = async () => {
@@ -186,6 +197,10 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setIsLoading(false);
     }
   }, [loadRepositories, loadScans, loadReports]);
+
+  useEffect(() => {
+    if (isAuthenticated) void loadDashboard();
+  }, [isAuthenticated, loadDashboard]);
 
   // Sync repositories from GitHub
   const syncRepositories = useCallback(async () => {

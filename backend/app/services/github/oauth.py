@@ -108,6 +108,7 @@ class GitHubOAuthService:
             "Authorization": f"Bearer {access_token}",
             "Accept": "application/json",
             "User-Agent": "Cryptanium-OAuth",
+            "X-GitHub-Api-Version": "2022-11-28",
         }
 
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -119,12 +120,20 @@ class GitHubOAuthService:
                 )
 
             if response.status_code != 200:
+                detail = self._response_detail(response)
                 raise GitHubOAuthError(
-                    f"Failed to fetch GitHub user profile: HTTP {response.status_code}",
+                    f"Failed to fetch GitHub user profile: HTTP {response.status_code} - {detail}",
                     400,
                 )
 
-            user_data = response.json()
+            try:
+                user_data = response.json()
+            except ValueError as exc:
+                raise GitHubOAuthError(
+                    f"GitHub returned invalid profile data: {exc}", 502
+                ) from exc
+            if not user_data.get("id") or not user_data.get("login"):
+                raise GitHubOAuthError("GitHub profile is missing id or login.", 502)
             email = user_data.get("email")
 
             # Fallback to /user/emails if email is private/null
@@ -154,3 +163,12 @@ class GitHubOAuthService:
         except httpx.RequestError:
             pass
         return None
+
+    @staticmethod
+    def _response_detail(response: httpx.Response) -> str:
+        """Return a safe, useful upstream error without exposing credentials."""
+        try:
+            payload = response.json()
+            return str(payload.get("message") or payload.get("error") or "unknown error")
+        except ValueError:
+            return response.text[:200] or "empty response"

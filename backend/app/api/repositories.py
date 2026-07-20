@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_user
@@ -48,6 +49,20 @@ async def list_repositories(
 ):
     """Retrieve all repositories belonging to the authenticated user or stored in system."""
     raw_token = extract_optional_token(authorization, x_github_token)
+
+    # The frontend sends the Cryptanium JWT. Never forward that JWT to GitHub;
+    # resolve the user's stored GitHub access token first.
+    if authorization and authorization.lower().startswith("bearer ") and not x_github_token:
+        try:
+            current_user = get_current_user(
+                credentials=HTTPAuthorizationCredentials(
+                    scheme="Bearer", credentials=authorization[7:].strip()
+                ),
+                db=db,
+            )
+            raw_token = current_user.access_token
+        except Exception:
+            raw_token = None
 
     if raw_token:
         gh_service = GitHubRepositoryService()

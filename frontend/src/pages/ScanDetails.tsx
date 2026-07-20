@@ -10,11 +10,11 @@ const ScanDetails: React.FC = () => {
   const [filterText, setFilterText] = useState('');
 
   const repo = repositories.find(r => r.id === id) || repositories[0];
-  const scan = scans.find(s => s.repoId === id) || scans[0];
+  const scan = scans.find(s => String(s.repository_id) === id) || scans[0];
   const repoFindings = findings.filter(f => f.repoId === (repo?.id ?? id));
   const filteredFindings = repoFindings.filter(f =>
-    f.title.toLowerCase().includes(filterText.toLowerCase()) ||
-    f.tool.toLowerCase().includes(filterText.toLowerCase())
+    (f.description || '').toLowerCase().includes(filterText.toLowerCase()) ||
+    (f.tool || '').toLowerCase().includes(filterText.toLowerCase())
   );
 
   if (!repo) {
@@ -38,8 +38,10 @@ const ScanDetails: React.FC = () => {
     }
   };
 
-  const scoreColor = repo.trustScore >= 80 ? 'text-secondary' : repo.trustScore >= 60 ? 'text-tertiary' : 'text-error';
-  const scoreBorderColor = repo.trustScore >= 80 ? 'border-secondary/20 bg-secondary/10' : repo.trustScore >= 60 ? 'border-tertiary/20 bg-tertiary/10' : 'border-error/20 bg-error/10';
+  const score = scan?.trust_score ?? 0;
+  const counts = { total: scan?.findings_count ?? repoFindings.length, critical: 0, high: 0, medium: 0, low: 0 };
+  const scoreColor = score >= 80 ? 'text-secondary' : score >= 60 ? 'text-tertiary' : 'text-error';
+  const scoreBorderColor = score >= 80 ? 'border-secondary/20 bg-secondary/10' : score >= 60 ? 'border-tertiary/20 bg-tertiary/10' : 'border-error/20 bg-error/10';
 
   return (
     <div className="flex-1">
@@ -62,18 +64,18 @@ const ScanDetails: React.FC = () => {
             <h1 className="text-headline-lg font-headline-lg text-on-background flex items-center gap-sm flex-wrap">
               {repo.name}
               <span className="bg-surface-container text-outline-variant text-[10px] px-2 py-0.5 rounded border border-outline-variant font-label-caps uppercase">
-                {repo.isPrivate ? 'Private' : 'Public'}
+                {repo.private ? 'Private' : 'Public'}
               </span>
             </h1>
             <div className="flex items-center gap-md mt-sm text-on-surface-variant">
               <div className="flex items-center gap-xs">
                 <span className="material-symbols-outlined text-[16px]">balance</span>
-                <span className="font-label-caps text-sm">{repo.branch}</span>
+                <span className="font-label-caps text-sm">{repo.default_branch}</span>
               </div>
               <div className="w-1 h-1 rounded-full bg-outline-variant" />
               <div className="flex items-center gap-xs">
                 <span className="material-symbols-outlined text-[16px]">schedule</span>
-                <span className="text-sm">Scanned {repo.lastScanTime}</span>
+                <span className="text-sm">Scanned {repo.last_scan ? new Date(repo.last_scan).toLocaleString() : 'Not scanned'}</span>
               </div>
             </div>
           </div>
@@ -84,21 +86,21 @@ const ScanDetails: React.FC = () => {
           <div className={`flex items-center gap-sm border px-4 py-2 rounded-xl ${scoreBorderColor}`}>
             <div className="flex flex-col items-end">
               <span className={`font-label-caps text-[10px] ${scoreColor}`}>Trust Score</span>
-              <span className={`text-headline-md font-headline-md font-bold ${scoreColor}`}>{repo.trustScore}/100</span>
+              <span className={`text-headline-md font-headline-md font-bold ${scoreColor}`}>{score}/100</span>
             </div>
             <div className="w-10 h-10 flex items-center justify-center">
               <svg className="w-full h-full transform -rotate-90">
                 <circle className="text-surface-container-highest" cx="20" cy="20" fill="transparent" r="18" stroke="currentColor" strokeWidth="3" />
                 <circle className={scoreColor} cx="20" cy="20" fill="transparent" r="18" stroke="currentColor"
                   strokeDasharray="113.1"
-                  strokeDashoffset={113.1 - (repo.trustScore / 100) * 113.1}
+                  strokeDashoffset={113.1 - (score / 100) * 113.1}
                   strokeWidth="3"
                 />
               </svg>
             </div>
           </div>
           <span className={`mt-2 text-[11px] font-label-caps ${scoreColor}`}>
-            Status: {repo.trustScore >= 80 ? 'Healthy' : repo.trustScore >= 60 ? 'Fair' : 'Critical'}
+            Status: {score >= 80 ? 'Healthy' : score >= 60 ? 'Fair' : 'Critical'}
           </span>
         </div>
       </div>
@@ -118,11 +120,11 @@ const ScanDetails: React.FC = () => {
         </div>
         <div className="flex gap-sm mb-2">
           {[
-            { label: 'Total', value: repo.findingsCount.total, icon: 'bug_report', color: 'text-primary' },
-            { label: 'Critical', value: repo.findingsCount.critical, dot: 'bg-error' },
-            { label: 'High', value: repo.findingsCount.high, dot: 'bg-tertiary' },
-            { label: 'Medium', value: repo.findingsCount.medium, dot: 'bg-[#ffcc00]' },
-            { label: 'Low', value: repo.findingsCount.low, dot: 'bg-secondary' }
+            { label: 'Total', value: counts.total, icon: 'bug_report', color: 'text-primary' },
+            { label: 'Critical', value: counts.critical, dot: 'bg-error' },
+            { label: 'High', value: counts.high, dot: 'bg-tertiary' },
+            { label: 'Medium', value: counts.medium, dot: 'bg-[#ffcc00]' },
+            { label: 'Low', value: counts.low, dot: 'bg-secondary' }
           ].map(item => (
             <div key={item.label} className="bg-surface-container px-3 py-1.5 rounded-lg border border-outline-variant flex items-center gap-sm">
               {item.icon ? <span className={`material-symbols-outlined ${item.color} text-[18px]`}>{item.icon}</span> : <span className={`w-2 h-2 rounded-full ${item.dot}`} />}
@@ -207,7 +209,7 @@ const ScanDetails: React.FC = () => {
                   <td className="py-4 px-6">
                     <div className="flex flex-col">
                       <span className={`font-bold ${finding.severity === 'Critical' ? 'text-error' : finding.severity === 'High' ? 'text-tertiary' : finding.severity === 'Medium' ? 'text-[#ffcc00]' : 'text-secondary'}`}>
-                        {finding.title}
+                        {finding.description}
                       </span>
                       <span className="text-outline text-[11px] mt-0.5">{finding.description}</span>
                     </div>
@@ -226,9 +228,9 @@ const ScanDetails: React.FC = () => {
                     </div>
                   </td>
                   <td className="py-4 px-6">
-                    <code className="font-code-sm text-primary text-[12px] bg-primary/5 px-2 py-0.5 rounded">{finding.filePath.split('/').pop()}</code>
+                    <code className="font-code-sm text-primary text-[12px] bg-primary/5 px-2 py-0.5 rounded">{finding.file_path.split('/').pop()}</code>
                   </td>
-                  <td className="py-4 px-6 text-right font-code-sm text-outline">{finding.line}</td>
+                  <td className="py-4 px-6 text-right font-code-sm text-outline">{finding.line_number}</td>
                 </tr>
               ))}
               {repoFindings.length === 0 && (

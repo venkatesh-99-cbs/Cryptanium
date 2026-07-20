@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_user
+from app.core.config import settings
+from app.core.oauth_state import consume_state, create_state
 from app.core.security import create_access_token
 from app.database.database import get_db
 from app.database.models import User
@@ -24,7 +26,7 @@ async def login(
 ):
     """Redirects client to GitHub OAuth authorization endpoint."""
     try:
-        auth_url = oauth_service.get_authorization_url(state=state)
+        auth_url = oauth_service.get_authorization_url(state=state or create_state())
         return RedirectResponse(url=auth_url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
     except GitHubOAuthError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.message)
@@ -32,10 +34,11 @@ async def login(
 
 @router.get(
     "/callback",
-    response_model=TokenResponse,
+    response_model=None,
     summary="GitHub OAuth callback endpoint",
 )
 async def callback(
+    request: Request,
     code: str | None = Query(None, description="Authorization code from GitHub"),
     state: str | None = Query(None, description="Returned state parameter"),
     error: str | None = Query(None, description="OAuth error parameter"),
@@ -86,11 +89,22 @@ async def callback(
     }
     jwt_token = create_access_token(data=jwt_payload)
 
-    return TokenResponse(
+    response = TokenResponse(
         access_token=jwt_token,
         token_type="bearer",
         user=UserResponse.model_validate(db_user),
     )
+    if "text/html" in request.headers.get("accept", ""):
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL.rstrip('/')}/login#access_token={jwt_token}",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+    if not consume_state(state):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired OAuth state. Please restart GitHub login.",
+        )
+    return response
 
 
 @router.post("/logout", summary="Logout authenticated user")

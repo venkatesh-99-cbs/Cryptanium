@@ -46,15 +46,14 @@ const Login: React.FC = () => {
 
   const handleGitHub = async () => {
     setGithubLoading(true);
-    await login();
-    setGithubLoading(false);
-    navigate('/dashboard');
+    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/auth/login`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    await login();
+    // OAuth is the supported login flow; the submit action opens it too.
+    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/auth/login`;
     setIsLoading(false);
     navigate('/dashboard');
   };

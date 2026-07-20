@@ -8,7 +8,8 @@ const Repository: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'recent' | 'scanned' | 'attention'>('recent');
   const [search, setSearch] = useState('');
 
-  const filteredRepos = repositories.filter(r => r.name.toLowerCase().includes(search.toLowerCase()));
+  const selectedIds = JSON.parse(localStorage.getItem('cryptanium_selected_repositories') || '[]') as number[];
+  const filteredRepos = repositories.filter(r => selectedIds.includes(r.id)).filter(r => r.name.toLowerCase().includes(search.toLowerCase()));
 
   const getScoreLabel = (score: number) => {
     if (score >= 85) return { label: 'OPTIMAL', color: 'text-secondary' };
@@ -56,16 +57,16 @@ const Repository: React.FC = () => {
       {/* Repositories List */}
       <div className="flex flex-col gap-sm">
         {filteredRepos.map(repo => {
-          const { label, color } = getScoreLabel(repo.trustScore);
+          const { label, color } = getScoreLabel(0);
           return (
             <div
-              key={repo.id}
+              key={repo.github_repo_id || repo.full_name || `repo-${repo.id}`}
               className="glass-card p-md flex items-center justify-between rounded-xl transition-all cursor-pointer neon-glow group"
               onClick={() => navigate(`/scans/${repo.id}`)}
             >
               <div className="flex items-center gap-lg flex-1">
                 <div className="w-12 h-12 bg-surface-container-highest rounded-lg flex items-center justify-center border border-outline-variant shrink-0">
-                  <span className="material-symbols-outlined text-on-surface-variant">{repo.icon}</span>
+                  <span className="material-symbols-outlined text-on-surface-variant">folder_managed</span>
                 </div>
                 <div className="flex flex-col">
                   <h3 className="text-lg font-bold text-on-background group-hover:text-primary transition-colors">{repo.name}</h3>
@@ -74,9 +75,9 @@ const Repository: React.FC = () => {
                       <span className="material-symbols-outlined text-[16px]">code</span>{repo.language}
                     </span>
                     <span className="text-on-surface-variant text-sm flex items-center gap-xs">
-                      <span className="material-symbols-outlined text-[16px]">history</span>Added {repo.addedTime}
+                      <span className="material-symbols-outlined text-[16px]">history</span>Updated {repo.updated_at ? new Date(repo.updated_at).toLocaleDateString() : 'Not scanned'}
                     </span>
-                    {repo.isPrivate && (
+                    {repo.private && (
                       <span className="bg-surface-container text-outline-variant text-[10px] px-2 py-0.5 rounded border border-outline-variant font-label-caps uppercase">Private</span>
                     )}
                   </div>
@@ -86,11 +87,11 @@ const Repository: React.FC = () => {
               <div className="flex items-center gap-xl">
                 <div className="flex flex-col items-end">
                   <span className="text-[10px] font-label-caps text-on-surface-variant mb-1">LAST SCAN</span>
-                  <span className="text-on-surface text-sm">{repo.lastScanTime}</span>
+                  <span className="text-on-surface text-sm">{repo.last_scan ? new Date(repo.last_scan).toLocaleString() : 'Not scanned'}</span>
                 </div>
                 <div className="flex items-center gap-md min-w-[120px] justify-end">
                   <div className="flex flex-col items-end mr-sm">
-                    <span className={`text-[20px] font-bold ${color}`}>{repo.trustScore}/100</span>
+                    <span className={`text-[20px] font-bold ${color}`}>0/100</span>
                     <span className={`text-[10px] font-label-caps ${color}/60`}>{label}</span>
                   </div>
                   <button
@@ -100,7 +101,7 @@ const Repository: React.FC = () => {
                     title="Re-scan"
                   >
                     <span className="material-symbols-outlined text-[20px]">
-                      {repo.status === 'RUNNING' ? 'refresh' : 'play_arrow'}
+                      play_arrow
                     </span>
                   </button>
                   <span className="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">chevron_right</span>

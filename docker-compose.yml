@@ -1,12 +1,11 @@
-version: '3.9'
-
 services:
   db:
+    profiles: [postgres]
     image: postgres:15-alpine
     container_name: cryptanium-db
     environment:
       POSTGRES_USER: cryptanium
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local_dev_password}
       POSTGRES_DB: cryptanium_db
     expose:
       - "5432"
@@ -24,11 +23,15 @@ services:
       dockerfile: Dockerfile
     container_name: cryptanium-backend
     environment:
-      - DATABASE_URL=postgresql://cryptanium:${POSTGRES_PASSWORD}@db:5432/cryptanium_db
-      - SECRET_KEY=${SECRET_KEY:?Set SECRET_KEY in .env}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:////app/data/cryptanium.db}
+      - SECRET_KEY=${SECRET_KEY:-local-development-secret-change-me}
       - APP_ENV=production
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - SCANNER_MAX_CONCURRENCY=${SCANNER_MAX_CONCURRENCY:-2}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
+      - GITHUB_REDIRECT_URI=${GITHUB_REDIRECT_URI:-http://localhost:8000/auth/callback}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
     ports:
       - "8000:8000"
     healthcheck:
@@ -36,11 +39,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    depends_on:
-      db:
-        condition: service_healthy
     volumes:
       - ./reports_storage:/app/reports_storage
+      - sqlite_data:/app/data
 
   frontend:
     image: node:20-alpine
@@ -60,3 +61,4 @@ services:
 volumes:
   postgres_data:
   frontend_node_modules:
+  sqlite_data:

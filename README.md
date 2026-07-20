@@ -14,7 +14,15 @@ Copy `.env.example` to `.env`, replace `SECRET_KEY` and `POSTGRES_PASSWORD` with
 
 ### Docker
 
-Open `http://localhost:5173`; API docs are at `http://localhost:8000/docs`. PostgreSQL is internal to Compose and is not exposed publicly.
+Open `http://localhost:5173`; API docs are at `http://localhost:8000/docs`. The default Compose profile uses persistent SQLite, so no `POSTGRES_PASSWORD` is required:
+
+```bash
+docker compose up --build -d
+```
+
+For local PostgreSQL instead, use `POSTGRES_PASSWORD=... DATABASE_URL=postgresql://cryptanium:...@db:5432/cryptanium_db docker compose --profile postgres up --build`.
+
+For Neon deployment, set `DATABASE_URL` to the Neon pooled URL with `sslmode=require`; do not start the local `db` service. Set `GITHUB_REDIRECT_URI` to `https://YOUR-API-DOMAIN/auth/callback` and register that exact URL in the GitHub OAuth application. Local GitHub OAuth uses `http://localhost:8000/auth/callback`.
 
 ### Manual development
 

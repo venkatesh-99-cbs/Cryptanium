@@ -62,11 +62,11 @@ const DashboardLayout: React.FC = () => {
         <div className="mt-auto px-md pt-lg border-t border-outline-variant/30">
           <div className="p-md bg-surface-container rounded-xl flex items-center gap-md border border-outline-variant/30 group hover:border-primary/30 transition-all duration-300">
             <div className="w-10 h-10 rounded-full overflow-hidden border border-primary/20 shrink-0">
-              <img className="w-full h-full object-cover" alt="Alex Developer Avatar" src={user.avatar} />
+              <img className="w-full h-full object-cover" alt="User avatar" src={user?.avatar_url || '/cyyptanium.jpeg'} />
             </div>
             <div className="flex-1 overflow-hidden">
-              <p className="font-body-md font-bold text-on-surface truncate">{user.name}</p>
-              <p className="text-[12px] text-outline truncate">{user.email}</p>
+              <p className="font-body-md font-bold text-on-surface truncate">{user?.username || 'Cryptanium user'}</p>
+              <p className="text-[12px] text-outline truncate">{user?.email || 'Loading profile…'}</p>
             </div>
             <button onClick={handleLogout} className="material-symbols-outlined text-on-surface-variant hover:text-error transition-colors" title="Logout">
               logout
