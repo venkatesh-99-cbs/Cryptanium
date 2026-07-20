@@ -13,6 +13,7 @@ from backend.ai.prompts import (
     SYSTEM_SUMMARY_PROMPT,
     build_summary_user_prompt,
 )
+from backend.ai.client import OpenRouterClient
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +21,13 @@ logger = logging.getLogger(__name__)
 class AISummaryGenerator:
     """LLM wrapper with offline fallback for executive security summarization."""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-3.5-turbo"):
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY") or os.getenv("OPENROUTER_API_KEY")
-        self.model = model
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
+        self.api_key = api_key or os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY")
+        self.model = model or os.getenv("OPENROUTER_MODEL", "nvidia/nemotron-4-340b-instruct")
+        self.client = OpenRouterClient(
+            api_keys=[self.api_key] if self.api_key else None,
+            default_model=self.model,
+        ) if self.api_key else None
 
     def generate_summary(self, payload: ScanPayload, trust_result: TrustScoreResult) -> Dict[str, str]:
         """
@@ -35,7 +40,7 @@ class AISummaryGenerator:
         findings = payload.findings
         formatted_findings = self._format_findings_for_prompt(findings)
 
-        if self.api_key:
+        if self.client and self.client.api_keys:
             try:
                 return self._call_llm_summary(payload, trust_result, formatted_findings)
             except Exception as e:
@@ -48,15 +53,16 @@ class AISummaryGenerator:
         if not findings:
             return "No vulnerabilities detected."
         lines = []
-        for idx, f in enumerate(findings, 1):
+        # Limit findings to top 30 to prevent token overflow on huge repos
+        for idx, f in enumerate(findings[:30], 1):
             line = f"{idx}. [{f.severity}] {f.tool} - {f.file}:{f.line or 'N/A'} - {f.description} (OWASP: {f.owasp or 'N/A'})"
             lines.append(line)
+        if len(findings) > 30:
+            lines.append(f"... and {len(findings) - 30} additional findings truncated for length.")
         return "\n".join(lines)
 
     def _call_llm_summary(self, payload: ScanPayload, trust_result: TrustScoreResult, formatted_findings: str) -> Dict[str, str]:
-        """Calls OpenAI / OpenRouter API to produce summary."""
-        import urllib.request
-
+        """Calls OpenRouter API to produce summary."""
         user_prompt = build_summary_user_prompt(
             repository=payload.repository,
             branch=payload.branch,
@@ -66,36 +72,18 @@ class AISummaryGenerator:
             findings_summary=formatted_findings,
         )
 
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
-        }
-        req_body = {
-            "model": self.model,
-            "messages": [
-                {"role": "system", "content": SYSTEM_SUMMARY_PROMPT},
-                {"role": "user", "content": user_prompt},
-            ],
-            "temperature": 0.2,
-            "response_format": {"type": "json_object"},
-        }
-
-        req = urllib.request.Request(
-            "https://api.openai.com/v1/chat/completions",
-            data=json.dumps(req_body).encode("utf-8"),
-            headers=headers,
-            method="POST",
+        parsed = self.client.chat_completion(
+            system_prompt=SYSTEM_SUMMARY_PROMPT,
+            user_prompt=user_prompt,
+            temperature=0.2,
+            json_mode=True,
         )
-        with urllib.request.urlopen(req, timeout=15) as response:
-            resp_data = json.loads(response.read().decode("utf-8"))
-            content_str = resp_data["choices"][0]["message"]["content"]
-            parsed = json.loads(content_str)
-            return {
-                "repository_overview": parsed.get("repository_overview", ""),
-                "security_posture": parsed.get("security_posture", ""),
-                "most_severe_findings": parsed.get("most_severe_findings", ""),
-                "deployment_readiness": parsed.get("deployment_readiness", ""),
-            }
+        return {
+            "repository_overview": parsed.get("repository_overview", ""),
+            "security_posture": parsed.get("security_posture", ""),
+            "most_severe_findings": parsed.get("most_severe_findings", ""),
+            "deployment_readiness": parsed.get("deployment_readiness", ""),
+        }
 
     def _generate_fallback_summary(self, payload: ScanPayload, trust_result: TrustScoreResult) -> Dict[str, str]:
         """Deterministic, zero-hallucination fallback summarizer when offline or no API key is provided."""

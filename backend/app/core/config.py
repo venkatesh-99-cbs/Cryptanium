@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     HOST: str = "127.0.0.1"
     PORT: int = 8000
 
-    DATABASE_URL: str = ""
+    DATABASE_URL: str = "sqlite:///./cryptanium.db"
 
     GITHUB_CLIENT_ID: str = ""
     GITHUB_CLIENT_SECRET: str = ""

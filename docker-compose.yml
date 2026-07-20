@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: cryptanium-db
+    environment:
+      POSTGRES_USER: cryptanium
+      POSTGRES_PASSWORD: cryptanium_password
+      POSTGRES_DB: cryptanium_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cryptanium -d cryptanium_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cryptanium-backend
+    environment:
+      - DATABASE_URL=postgresql://cryptanium:cryptanium_password@db:5432/cryptanium_db
+      - SECRET_KEY=cryptanium-production-secret-key-2026
+      - APP_ENV=production
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./reports_storage:/app/reports_storage
+
+volumes:
+  postgres_data:

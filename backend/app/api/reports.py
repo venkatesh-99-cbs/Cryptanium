@@ -1,5 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
+import os
 
 from app.database.database import get_db
 from app.schemas.report import ReportResponse
@@ -40,13 +42,49 @@ def get_report_by_id(
 
 
 @router.get(
-    "/download/{id}",
-    summary="Get report download link and metadata",
+    "/{id}/pdf",
+    summary="Download PDF security report",
 )
-def download_report(
+def download_pdf_report(
     id: int,
     db: Session = Depends(get_db),
     report_service: ReportService = Depends(get_report_service),
 ):
-    """Retrieve report download path and URL for specified report ID."""
-    return report_service.get_report_download(db=db, report_id=id)
+    """Downloads the generated PDF report for a given scan or report ID."""
+    report_meta = report_service.get_report_download(db=db, report_id=id)
+    pdf_path = report_meta.get("report_path")
+    if not pdf_path or not os.path.exists(pdf_path):
+        # Check default reports directory
+        pdf_path = f"reports_storage/report_{id}.pdf"
+        if not os.path.exists(pdf_path):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="PDF report file not found.")
+
+    return FileResponse(
+        pdf_path,
+        media_type="application/pdf",
+        filename=os.path.basename(pdf_path),
+    )
+
+
+@router.get(
+    "/{id}/json",
+    summary="Download JSON security report",
+)
+def download_json_report(
+    id: int,
+    db: Session = Depends(get_db),
+    report_service: ReportService = Depends(get_report_service),
+):
+    """Downloads the generated JSON report for a given scan or report ID."""
+    report_meta = report_service.get_report_download(db=db, report_id=id)
+    json_path = report_meta.get("report_path", "").replace(".pdf", ".json")
+    if not json_path or not os.path.exists(json_path):
+        json_path = f"reports_storage/report_{id}.json"
+        if not os.path.exists(json_path):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="JSON report file not found.")
+
+    return FileResponse(
+        json_path,
+        media_type="application/json",
+        filename=os.path.basename(json_path),
+    )

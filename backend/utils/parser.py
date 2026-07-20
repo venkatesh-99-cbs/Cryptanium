@@ -75,3 +75,45 @@ class ScanPayload(BaseModel):
             return cls.model_validate(raw_data)
         else:
             raise ValueError(f"Unsupported payload type: {type(raw_data)}")
+
+    @classmethod
+    def from_scan_report(cls, scan_report: Any, repository: str = "", branch: str = "main") -> "ScanPayload":
+        """Converts a Scanner Engine ScanReport object into a ScanPayload."""
+        findings_items = []
+        report_findings = getattr(scan_report, "findings", []) or []
+        for f in report_findings:
+            tool_name = getattr(f, "tool", "Scanner") or "Scanner"
+            sev_raw = getattr(f, "severity", "Info")
+            sev_str = str(sev_raw.value if hasattr(sev_raw, "value") else sev_raw).capitalize()
+            desc = getattr(f, "description", None) or getattr(f, "title", "Vulnerability detected")
+            rec = getattr(f, "recommendation", None)
+            category = getattr(f, "category", None) or getattr(f, "rule", None)
+            
+            findings_items.append(
+                FindingItem(
+                    severity=sev_str,
+                    tool=tool_name,
+                    file=getattr(f, "file", "N/A"),
+                    line=getattr(f, "line", None),
+                    description=desc,
+                    recommendation=rec,
+                    owasp=category if (category and category.startswith("A")) else None,
+                    cve=category if (category and "CVE" in category.upper()) else None,
+                    is_secret="secret" in tool_name.lower() or "gitleaks" in tool_name.lower(),
+                    is_dependency="audit" in tool_name.lower() or "trivy" in tool_name.lower(),
+                )
+            )
+
+        lang = "Generic"
+        if hasattr(scan_report, "language_info") and scan_report.language_info:
+            lang = getattr(scan_report.language_info, "primary_language", "Generic") or "Generic"
+
+        repo_name = repository or getattr(scan_report, "repo_url", "Unknown Repository")
+
+        return cls(
+            repository=repo_name,
+            branch=branch,
+            language=lang,
+            scan_date=getattr(scan_report, "completed_at", None) and str(getattr(scan_report, "completed_at")),
+            findings=findings_items,
+        )

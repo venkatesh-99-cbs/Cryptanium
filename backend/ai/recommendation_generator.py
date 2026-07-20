@@ -43,12 +43,29 @@ class RecommendationItem:
         }
 
 
+from backend.ai.client import OpenRouterClient
+
+
 class AIRecommendationEngine:
     """Generates prioritized remediation recommendations."""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-3.5-turbo"):
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY") or os.getenv("OPENROUTER_API_KEY")
-        self.model = model
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
+        self.api_key = api_key or os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY")
+        self.model = model or os.getenv("OPENROUTER_MODEL", "nvidia/nemotron-4-340b-instruct")
+        self.client = OpenRouterClient(
+            api_keys=[self.api_key] if self.api_key else None,
+            default_model=self.model,
+        ) if self.api_key else None
+
+    def _deduplicate_findings(self, findings: List[FindingItem]) -> List[FindingItem]:
+        seen = set()
+        deduped = []
+        for f in findings:
+            key = (f.tool, f.description, f.severity, f.owasp)
+            if key not in seen:
+                seen.add(key)
+                deduped.append(f)
+        return deduped
 
     def generate_recommendations(self, payload: ScanPayload) -> List[Dict[str, Any]]:
         """
@@ -65,13 +82,15 @@ class AIRecommendationEngine:
                 "severity": "Info",
             }]
 
+        deduped_findings = self._deduplicate_findings(findings)
+
         # Sort findings by severity priority first
         sorted_findings = sorted(
-            findings,
+            deduped_findings,
             key=lambda f: SEVERITY_PRIORITY_ORDER.get(f.severity, 99)
         )
 
-        if self.api_key:
+        if self.client and self.client.api_keys:
             try:
                 rec_list = self._call_llm_recommendations(sorted_findings)
                 if rec_list:
@@ -119,40 +138,22 @@ class AIRecommendationEngine:
         return recommendations
 
     def _call_llm_recommendations(self, sorted_findings: List[FindingItem]) -> List[Dict[str, Any]]:
-        import urllib.request
-
         findings_summary = "\n".join([
             f"- [{f.severity}] {f.description} in {f.file}:{f.line or 'N/A'}. Tool: {f.tool}. OWASP: {f.owasp or 'N/A'}. Suggestion: {f.recommendation or 'N/A'}"
-            for f in sorted_findings
+            for f in sorted_findings[:30]
         ])
 
         user_prompt = build_recommendation_user_prompt(findings_summary)
 
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
-        }
-        req_body = {
-            "model": self.model,
-            "messages": [
-                {"role": "system", "content": SYSTEM_RECOMMENDATION_PROMPT},
-                {"role": "user", "content": user_prompt},
-            ],
-            "temperature": 0.2,
-        }
-
-        req = urllib.request.Request(
-            "https://api.openai.com/v1/chat/completions",
-            data=json.dumps(req_body).encode("utf-8"),
-            headers=headers,
-            method="POST",
+        parsed = self.client.chat_completion(
+            system_prompt=SYSTEM_RECOMMENDATION_PROMPT,
+            user_prompt=user_prompt,
+            temperature=0.2,
+            json_mode=True,
         )
-        with urllib.request.urlopen(req, timeout=15) as response:
-            resp_data = json.loads(response.read().decode("utf-8"))
-            content_str = resp_data["choices"][0]["message"]["content"]
-            parsed = json.loads(content_str)
-            if isinstance(parsed, list):
-                return parsed
-            elif isinstance(parsed, dict) and "recommendations" in parsed:
-                return parsed["recommendations"]
+
+        if isinstance(parsed, list):
+            return parsed
+        elif isinstance(parsed, dict) and "recommendations" in parsed:
+            return parsed["recommendations"]
         return []
