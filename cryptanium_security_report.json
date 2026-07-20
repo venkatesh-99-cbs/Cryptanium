@@ -1,0 +1,171 @@
+{
+  "repository": "venkatesh-99-cbs/Cryptanium",
+  "branch": "main",
+  "language": "Python",
+  "scan_date": "2026-07-20 10:07:09 UTC",
+  "trust_score": 23.5,
+  "risk_level": "Critical",
+  "score_breakdown": {
+    "final_score": 23.5,
+    "risk_level": "Critical",
+    "base_score": 100.0,
+    "total_deductions": 76.5,
+    "breakdown": [
+      {
+        "rule_name": "SeverityDeductionRule",
+        "deduction": 51.5,
+        "reason": "Deducted 51.5 points across findings: 1 Critical, 1 High, 1 Medium, 1 Low, 1 Info",
+        "details": {
+          "counts": {
+            "Critical": 1,
+            "High": 1,
+            "Medium": 1,
+            "Low": 1,
+            "Info": 1
+          },
+          "deductions_applied": 51.5
+        }
+      },
+      {
+        "rule_name": "SecretExposurePenaltyRule",
+        "deduction": 15.0,
+        "reason": "Detected 1 exposed secrets. Penalty: 15.0 pts",
+        "details": {
+          "secrets_count": 1,
+          "penalty_per_secret": 15.0
+        }
+      },
+      {
+        "rule_name": "VulnerableDependencyPenaltyRule",
+        "deduction": 10.0,
+        "reason": "Detected 1 vulnerable dependencies. Penalty: 10.0 pts",
+        "details": {
+          "vulnerable_deps_count": 1,
+          "penalty_per_dep": 10.0
+        }
+      },
+      {
+        "rule_name": "FindingVolumePenaltyRule",
+        "deduction": 0.0,
+        "reason": "Total findings count (5) within normal threshold.",
+        "details": {
+          "total_findings": 5,
+          "excess_findings": 0
+        }
+      },
+      {
+        "rule_name": "MissingDocumentationPenaltyRule",
+        "deduction": 0.0,
+        "reason": "SECURITY.md present.",
+        "details": {
+          "doc_present": true
+        }
+      }
+    ]
+  },
+  "summary": {
+    "repository_overview": "Repository 'venkatesh-99-cbs/Cryptanium' on branch 'main' is written primarily in Python. Automated security scans analyzed code artifacts and identified a total of 5 findings.",
+    "security_posture": "The repository achieved a Trust Score of 23.5/100, placing it in the 'Critical' risk tier. Scoring deductions reflect base severity findings and safety rules.",
+    "most_severe_findings": "The audit detected 1 Critical and 1 High severity vulnerabilities. Notable issues: [Critical] Possible SQL injection in dynamic query construction (backend/app/main.py); [High] Exposed OpenRouter API Key detected in codebase (backend/.env).",
+    "deployment_readiness": "NOT READY FOR DEPLOYMENT. Critical or high-severity vulnerabilities must be remediated prior to staging or production releases."
+  },
+  "recommendations": [
+    {
+      "priority": "Urgent",
+      "issue": "Possible SQL injection in dynamic query construction (backend/app/main.py:52)",
+      "recommended_fix": "Use parameterized queries or SQLAlchemy ORM methods.",
+      "reason": "Fixing this Critical severity issue addresses potential security risk tagged under A03.",
+      "severity": "Critical"
+    },
+    {
+      "priority": "High",
+      "issue": "Exposed OpenRouter API Key detected in codebase (backend/.env:8)",
+      "recommended_fix": "Revoke API key immediately and add .env to .gitignore.",
+      "reason": "Fixing this High severity issue addresses potential security risk tagged under A07.",
+      "severity": "High"
+    },
+    {
+      "priority": "Medium",
+      "issue": "Outdated urllib3 library vulnerable to ReDoS CVE-2023-45803 (backend/requirements.txt:14)",
+      "recommended_fix": "Upgrade urllib3 to version >= 2.0.7",
+      "reason": "Fixing this Medium severity issue addresses potential security risk tagged under A06.",
+      "severity": "Medium"
+    },
+    {
+      "priority": "Low",
+      "issue": "Standard pseudo-random generator (random) used for non-cryptographic purpose (backend/utils/formatter.py:88)",
+      "recommended_fix": "Use 'secrets' module for security-sensitive random numbers.",
+      "reason": "Fixing this Low severity issue addresses potential security risk tagged under A02.",
+      "severity": "Low"
+    },
+    {
+      "priority": "Low",
+      "issue": "Base image tag 'latest' used instead of fixed version pin (Dockerfile:2)",
+      "recommended_fix": "Pin Docker base image to a specific version digest or tag.",
+      "reason": "Fixing this Info severity issue addresses potential security risk tagged under A05.",
+      "severity": "Info"
+    }
+  ],
+  "findings": [
+    {
+      "severity": "Critical",
+      "tool": "Bandit",
+      "file": "backend/app/main.py",
+      "line": 52,
+      "description": "Possible SQL injection in dynamic query construction",
+      "recommendation": "Use parameterized queries or SQLAlchemy ORM methods.",
+      "owasp": "A03",
+      "cve": null,
+      "is_secret": false,
+      "is_dependency": false
+    },
+    {
+      "severity": "High",
+      "tool": "Gitleaks",
+      "file": "backend/.env",
+      "line": 8,
+      "description": "Exposed OpenRouter API Key detected in codebase",
+      "recommendation": "Revoke API key immediately and add .env to .gitignore.",
+      "owasp": "A07",
+      "cve": null,
+      "is_secret": true,
+      "is_dependency": false
+    },
+    {
+      "severity": "Medium",
+      "tool": "Trivy",
+      "file": "backend/requirements.txt",
+      "line": 14,
+      "description": "Outdated urllib3 library vulnerable to ReDoS CVE-2023-45803",
+      "recommendation": "Upgrade urllib3 to version >= 2.0.7",
+      "owasp": "A06",
+      "cve": null,
+      "is_secret": false,
+      "is_dependency": true
+    },
+    {
+      "severity": "Low",
+      "tool": "Bandit",
+      "file": "backend/utils/formatter.py",
+      "line": 88,
+      "description": "Standard pseudo-random generator (random) used for non-cryptographic purpose",
+      "recommendation": "Use 'secrets' module for security-sensitive random numbers.",
+      "owasp": "A02",
+      "cve": null,
+      "is_secret": false,
+      "is_dependency": false
+    },
+    {
+      "severity": "Info",
+      "tool": "Semgrep",
+      "file": "Dockerfile",
+      "line": 2,
+      "description": "Base image tag 'latest' used instead of fixed version pin",
+      "recommendation": "Pin Docker base image to a specific version digest or tag.",
+      "owasp": "A05",
+      "cve": null,
+      "is_secret": false,
+      "is_dependency": false
+    }
+  ]
+}
