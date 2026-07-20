@@ -1,0 +1,37 @@
+# Environment files
+.env
+.env.*
+!.env.example
+backend/.env
+
+# Node & Frontend
+node_modules/
+frontend/node_modules/
+dist/
+build/
+.vite/
+
+# Python & Backend
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+backend/.venv/
+*.egg-info/
+
+# SQLite & Storage
+*.db
+backend/cryptanium.db
+cryptanium_workspaces/
+
+# Generated Output Reports
+*.pdf
+*.json
+!backend/app/
+
+# Logs & Temporary
+*.log
+tmp/
+temp/
+.DS_Store
+Thumbs.db
