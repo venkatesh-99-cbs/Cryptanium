@@ -8,6 +8,7 @@ vulnerabilities in Python dependencies.
 from __future__ import annotations
 
 import logging
+import sys
 from pathlib import Path
 
 from backend.services.scanner.base import BaseScanner
@@ -21,7 +22,8 @@ class PipAuditScanner(BaseScanner):
     """
     Python dependency vulnerability scanning via pip-audit.
 
-    Requires ``requirements.txt`` in the repository root.
+    Uses the active Python interpreter so the installed pip-audit module is
+    found reliably in containers and virtual environments.
     """
 
     @property
@@ -34,7 +36,8 @@ class PipAuditScanner(BaseScanner):
     def build_command(self, repo_path: Path) -> list[str]:
         requirements_path = repo_path / "requirements.txt"
         return [
-            "pip-audit",
+            sys.executable,
+            "-m", "pip_audit",
             "-r", str(requirements_path),
             "--format", "json",
             "--progress-spinner", "off",

@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useSecurity } from '../context/SecurityContext';
 
 const Repository: React.FC = () => {
-  const { repositories, scans, triggerScan, isScanning, activeScanRepo, loadRepositories, isLoading } = useSecurity();
+  const { repositories, scans, triggerScan, isScanning, activeScanRepo, loadRepositories, isLoading, addRepository } = useSecurity();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
+  const [repoUrl, setRepoUrl] = useState('');
+  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     void loadRepositories();
@@ -29,6 +31,17 @@ const Repository: React.FC = () => {
     return { label: 'NOT SCANNED', color: 'text-on-surface-variant' };
   };
 
+  const handleAddRepository = async () => {
+    if (!repoUrl.trim()) return;
+    setAdding(true);
+    try {
+      await addRepository(repoUrl);
+      setRepoUrl('');
+    } finally {
+      setAdding(false);
+    }
+  };
+
   return (
     <div className="flex-1">
       {/* Page Title */}
@@ -48,8 +61,8 @@ const Repository: React.FC = () => {
         </span>
       </div>
 
-      {/* Search */}
-      <div className="mb-lg flex items-center gap-md">
+      {/* Search + Add */}
+      <div className="mb-lg flex flex-col md:flex-row items-stretch gap-md">
         <div className="relative flex-1 max-w-sm">
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
           <input
@@ -59,6 +72,23 @@ const Repository: React.FC = () => {
             onChange={e => setSearch(e.target.value)}
             className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg pl-10 pr-md py-2 text-sm focus:border-primary focus:ring-0 outline-none transition-all"
           />
+        </div>
+        <div className="flex flex-1 md:max-w-md gap-sm">
+          <input
+            type="text"
+            placeholder="Add GitHub repo URL"
+            value={repoUrl}
+            onChange={e => setRepoUrl(e.target.value)}
+            className="flex-1 bg-surface-container-lowest border border-outline-variant rounded-lg px-md py-2 text-sm focus:border-primary focus:ring-0 outline-none transition-all"
+          />
+          <button
+            onClick={() => void handleAddRepository()}
+            disabled={adding || !repoUrl.trim()}
+            className="flex items-center gap-xs px-md py-2 rounded-lg bg-primary text-white text-sm disabled:opacity-40"
+          >
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            {adding ? 'Adding...' : 'Add'}
+          </button>
         </div>
         <button
           onClick={() => void loadRepositories()}

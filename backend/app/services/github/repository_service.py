@@ -81,7 +81,9 @@ class RepositoryService:
         synced_repos: list[RepositoryResponse] = []
 
         for repo_data in github_repos:
-            gh_id = str(repo_data["id"])
+            gh_id = str(repo_data.get("id") or repo_data.get("github_repo_id") or "")
+            if not gh_id:
+                continue
             full_name = repo_data.get("full_name", repo_data.get("name", ""))
             name = repo_data.get("name", "")
             is_private = bool(repo_data.get("private", False))
@@ -134,6 +136,47 @@ class RepositoryService:
             synced_count=len(synced_repos),
             repositories=synced_repos,
         )
+
+    def add_repository(
+        self, db: Session, user: User, repository: RepositoryResponse
+    ) -> RepositoryResponse:
+        """Persist a repository entry for scanning and reporting."""
+        if not repository.full_name:
+            raise ValidationException("Repository full_name is required.")
+
+        full_name = repository.full_name.strip()
+        owner, _, repo_name = full_name.partition("/")
+        if not owner or not repo_name:
+            raise ValidationException("Repository should be in owner/repo format.")
+
+        identifier = repository.github_repo_id or full_name
+        existing = db.query(Repository).filter(Repository.github_repo_id == str(identifier)).first()
+        if existing:
+            existing.user_id = user.id
+            existing.name = repository.name or repo_name
+            existing.full_name = full_name
+            existing.default_branch = repository.default_branch or "main"
+            existing.language = repository.language
+            existing.visibility = "private" if repository.private else "public"
+            existing.clone_url = repository.clone_url or f"https://github.com/{full_name}.git"
+            db.commit()
+            db.refresh(existing)
+            return self.get_repository_by_id(db=db, repo_id=existing.id)
+
+        db_repo = Repository(
+            github_repo_id=str(identifier),
+            user_id=user.id,
+            name=repository.name or repo_name,
+            full_name=full_name,
+            default_branch=repository.default_branch or "main",
+            language=repository.language,
+            visibility="private" if repository.private else "public",
+            clone_url=repository.clone_url or f"https://github.com/{full_name}.git",
+        )
+        db.add(db_repo)
+        db.commit()
+        db.refresh(db_repo)
+        return self.get_repository_by_id(db=db, repo_id=db_repo.id)
 
     def delete_repository(
         self, db: Session, repo_id: int, user_id: int | None = None

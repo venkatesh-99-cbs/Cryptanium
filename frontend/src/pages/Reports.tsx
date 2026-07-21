@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSecurity } from '../context/SecurityContext';
+import { apiClient } from '../services/api';
 
 const Reports: React.FC = () => {
   const { reports, generateReport, repositories } = useSecurity();
@@ -10,6 +11,16 @@ const Reports: React.FC = () => {
     setGeneratingFor(repoId);
     await generateReport(repoId);
     setGeneratingFor(null);
+  };
+
+  const handleDownload = (reportId: number, format: 'pdf' | 'json') => {
+    const url = format === 'pdf' ? apiClient.downloadPdfReport(reportId) : apiClient.downloadJsonReport(reportId);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${reportId}.${format}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const getStatusClass = (status: string) => {
@@ -107,10 +118,16 @@ const Reports: React.FC = () => {
                     {report.repoName}
                   </div>
                   <div className="flex gap-sm">
-                    <button className="text-primary hover:underline flex items-center gap-1 text-sm font-bold">
+                    <button
+                      onClick={(event) => { event.stopPropagation(); handleDownload(report.id, 'pdf'); }}
+                      className="text-primary hover:underline flex items-center gap-1 text-sm font-bold"
+                    >
                       <span className="material-symbols-outlined text-[16px]">download</span> PDF
                     </button>
-                    <button className="text-on-surface-variant hover:text-primary text-sm flex items-center gap-1">
+                    <button
+                      onClick={(event) => { event.stopPropagation(); handleDownload(report.id, 'json'); }}
+                      className="text-on-surface-variant hover:text-primary text-sm flex items-center gap-1"
+                    >
                       <span className="material-symbols-outlined text-[16px]">download</span> JSON
                     </button>
                   </div>

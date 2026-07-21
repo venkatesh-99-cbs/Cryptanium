@@ -75,6 +75,7 @@ class Scan(Base):
     medium_severity_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     low_severity_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     findings_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    scanner_results_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     ai_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     ai_risk_level: Mapped[str | None] = mapped_column(String(50), nullable=True)
     ai_key_concerns: Mapped[str | None] = mapped_column(Text, nullable=True)

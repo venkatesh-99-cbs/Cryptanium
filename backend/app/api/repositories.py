@@ -96,6 +96,22 @@ def get_repository_by_id(
 
 
 @router.post(
+    "",
+    response_model=RepositoryResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add a repository for scanning",
+)
+def add_repository(
+    repository: RepositoryResponse,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    repo_service: RepositoryService = Depends(get_repository_service),
+):
+    """Persist a repository entry for later scanning and reporting."""
+    return repo_service.add_repository(db=db, user=current_user, repository=repository)
+
+
+@router.post(
     "/sync",
     response_model=RepositorySyncResponse,
     summary="Synchronize GitHub repositories",

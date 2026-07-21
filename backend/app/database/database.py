@@ -41,6 +41,7 @@ def init_db(target_engine=None):
             "medium_severity_count": "INTEGER DEFAULT 0",
             "low_severity_count": "INTEGER DEFAULT 0",
             "findings_json": "TEXT",
+            "scanner_results_json": "TEXT",
             "ai_summary": "TEXT",
             "ai_risk_level": "VARCHAR(50)",
             "ai_key_concerns": "TEXT",

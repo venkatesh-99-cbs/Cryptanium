@@ -176,11 +176,43 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   // Load reports
+  const notifyUser = useCallback((title: string, body: string) => {
+    if (typeof window === 'undefined') return;
+    if ('Notification' in window) {
+      if (Notification.permission === 'granted') {
+        new Notification(title, { body });
+      } else if (Notification.permission === 'default') {
+        Notification.requestPermission().catch(() => undefined);
+      }
+    }
+  }, []);
+
   const loadReports = useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await apiClient.getReports();
-      setReports((data || []) as Report[]);
+      const normalizedReports = (data || []).map((report: any) => {
+        const scan = scans.find((item) => String(item.scan_id) === String(report.scan_id));
+        const repo = repositories.find((item) => String(item.id) === String(scan?.repository_id));
+        const findings = {
+          critical: scan?.critical_severity_count || 0,
+          high: scan?.high_severity_count || 0,
+          medium: scan?.medium_severity_count || 0,
+          low: scan?.low_severity_count || 0,
+        };
+        const status = scan?.status ? scan.status.toUpperCase() : 'COMPLETED';
+        return {
+          ...report,
+          repoId: scan?.repository_id ?? null,
+          repoName: repo?.full_name || repo?.name || scan?.repository_name || `Repository ${report.scan_id}`,
+          status: status === 'COMPLETED' ? 'HEALTHY' : status,
+          trustScore: scan?.trust_score ?? 0,
+          generatedAt: report.generated_at ? new Date(report.generated_at).toLocaleString() : 'Pending',
+          findings,
+          summary: scan?.ai_summary || '',
+        } as Report;
+      });
+      setReports(normalizedReports);
       setError(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load reports';
@@ -189,13 +221,15 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [repositories, scans]);
 
   // Load dashboard
   const loadDashboard = useCallback(async () => {
     try {
       setIsLoading(true);
-      await Promise.all([loadRepositories(), loadScans(), loadReports()]);
+      await loadRepositories();
+      await loadScans();
+      await loadReports();
       setError(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load dashboard';
@@ -225,10 +259,37 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [loadRepositories]);
 
-  // Add repository (stub for future implementation)
+  // Add repository by URL or full_name and persist it locally for scanning
   const addRepository = useCallback(async (url: string) => {
-    console.log('Adding repository:', url);
-    await loadRepositories();
+    try {
+      setIsLoading(true);
+      const trimmed = url.trim();
+      if (!trimmed) throw new Error('Repository URL is required');
+
+      const ownerRepo = trimmed.replace(/^https?:\/\/github\.com\//i, '').replace(/\.git$/i, '').trim();
+      const [owner, repoName] = ownerRepo.split('/').filter(Boolean);
+      if (!owner || !repoName) throw new Error('Use a GitHub repository URL such as https://github.com/owner/repo');
+
+      const repoPayload = {
+        github_repo_id: `${owner}/${repoName}`,
+        name: repoName,
+        full_name: `${owner}/${repoName}`,
+        default_branch: 'main',
+        language: 'unknown',
+        visibility: 'public',
+        clone_url: `https://github.com/${owner}/${repoName}.git`,
+      };
+
+      await apiClient.addRepository(repoPayload);
+      await loadRepositories();
+      setError(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to add repository';
+      setError(message);
+      console.error('Error adding repository:', err);
+    } finally {
+      setIsLoading(false);
+    }
   }, [loadRepositories]);
 
   // Trigger scan
@@ -261,6 +322,7 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       setScans(prev => [scanResult, ...prev.filter(s => s.scan_id !== scanResult.scan_id)]);
       await loadScans();
+      notifyUser('Scan complete', `${repo?.full_name || 'Repository'} scan is complete and the summary is ready.`);
       setError(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to trigger scan';
@@ -270,7 +332,7 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setIsScanning(false);
       setActiveScanRepo(null);
     }
-  }, [repositories, loadScans]);
+  }, [repositories, loadScans, notifyUser]);
 
   // Send chat message (AI Assistant) — real API call
   const sendChatMessage = useCallback((text: string) => {
@@ -326,8 +388,9 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const generateReport = useCallback(async (scanId: string | number) => {
     try {
       setIsLoading(true);
-      await apiClient.downloadReport(scanId);
+      await apiClient.generateReport(scanId);
       await loadReports();
+      notifyUser('Report ready', 'Your security report is ready to download.');
       setError(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to generate report';
@@ -335,7 +398,7 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } finally {
       setIsLoading(false);
     }
-  }, [loadReports]);
+  }, [loadReports, notifyUser]);
 
   // Authentication
   const login = useCallback(async (code: string) => {
