@@ -217,6 +217,9 @@ class ScanService:
             medium_severity_count=med_sev,
             low_severity_count=low_sev,
             findings_json=json.dumps(raw_findings),
+            scanner_results_json=json.dumps(
+                [result.model_dump(mode="json") for result in report.scan_results]
+            ),
             ai_summary=summary_data.get("executive_summary", ""),
             ai_risk_level=summary_data.get("risk_level", "Unknown"),
             ai_key_concerns=json.dumps(summary_data.get("key_concerns", [])),

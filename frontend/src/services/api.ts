@@ -49,6 +49,12 @@ class APIClient {
   // Repositories
   getRepositories() { return this.request<any[]>('/repositories'); }
   syncRepositories() { return this.request('/repositories/sync', { method: 'POST' }); }
+  addRepository(payload: Record<string, unknown>) {
+    return this.request('/repositories', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
 
   // Scans
   getScans() { return this.request<any[]>('/scans'); }
@@ -68,7 +74,9 @@ class APIClient {
 
   // Reports
   getReports() { return this.request<any[]>('/reports'); }
-  downloadReport(id: string | number) { return this.url(`/reports/${id}/pdf`); }
+  generateReport(id: string | number) { return this.request(`/reports/${id}/json`); }
+  downloadPdfReport(id: string | number) { return this.url(`/reports/${id}/pdf`); }
+  downloadJsonReport(id: string | number) { return this.url(`/reports/${id}/json`); }
 
   // AI Assistant
   aiChat(message: string, scan_id?: number | null) {

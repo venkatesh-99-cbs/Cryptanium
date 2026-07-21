@@ -1,7 +1,8 @@
+import os
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-import os
 
 from app.database.database import get_db
 from app.schemas.report import ReportResponse
@@ -52,9 +53,8 @@ def download_pdf_report(
 ):
     """Downloads the generated PDF report for a given scan or report ID."""
     report_meta = report_service.get_report_download(db=db, report_id=id)
-    pdf_path = report_meta.get("report_path")
+    pdf_path = report_meta.get("pdf_path")
     if not pdf_path or not os.path.exists(pdf_path):
-        # Check default reports directory
         pdf_path = f"reports_storage/report_{id}.pdf"
         if not os.path.exists(pdf_path):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="PDF report file not found.")
@@ -77,7 +77,7 @@ def download_json_report(
 ):
     """Downloads the generated JSON report for a given scan or report ID."""
     report_meta = report_service.get_report_download(db=db, report_id=id)
-    json_path = report_meta.get("report_path", "").replace(".pdf", ".json")
+    json_path = report_meta.get("json_path")
     if not json_path or not os.path.exists(json_path):
         json_path = f"reports_storage/report_{id}.json"
         if not os.path.exists(json_path):

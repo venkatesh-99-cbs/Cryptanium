@@ -8,10 +8,10 @@ const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('profile');
   const [saveStatus, setSaveStatus] = useState('');
   const [profile, setProfile] = useState({
-    name: user?.name ?? 'Alex Johnson',
-    email: user?.email ?? 'alex@company.io',
-    org: 'Acme Corp',
-    role: 'Lead Security Engineer',
+    name: user?.name ?? user?.username ?? 'GitHub User',
+    email: user?.email ?? '',
+    org: 'GitHub Profile',
+    role: 'Security Engineer',
   });
   const [notifications, setNotifications] = useState({
     emailCritical: true,
@@ -93,7 +93,7 @@ const Settings: React.FC = () => {
                 </div>
                 <div>
                   <p className="font-bold text-on-background">{profile.name}</p>
-                  <p className="text-sm text-on-surface-variant">{profile.role}</p>
+                  <p className="text-sm text-on-surface-variant">{user?.username ? `@${user.username}` : profile.role}</p>
                   <button className="text-primary text-sm hover:underline mt-xs">Change avatar</button>
                 </div>
               </div>
@@ -209,7 +209,7 @@ const Settings: React.FC = () => {
                     { name: 'Bandit', status: true },
                     { name: 'Gitleaks', status: true },
                     { name: 'npm audit', status: true },
-                    { name: 'pip-audit', status: false },
+                    { name: 'pip-audit', status: true },
                     { name: 'ESLint', status: true },
                   ].map(tool => (
                     <div key={tool.name} className={`rounded-lg p-md border flex items-center gap-sm ${tool.status ? 'border-secondary/20 bg-secondary/5' : 'border-outline-variant opacity-50'}`}>
