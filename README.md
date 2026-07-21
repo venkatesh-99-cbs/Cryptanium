@@ -24,6 +24,19 @@ For local PostgreSQL instead, use `POSTGRES_PASSWORD=... DATABASE_URL=postgresql
 
 For Neon deployment, set `DATABASE_URL` to the Neon pooled URL with `sslmode=require`; do not start the local `db` service. Set `GITHUB_REDIRECT_URI` to `https://YOUR-API-DOMAIN/auth/callback` and register that exact URL in the GitHub OAuth application. Local GitHub OAuth uses `http://localhost:8000/auth/callback`.
 
+## Render deployment
+
+Use the repository's `render.yaml` Blueprint. It deploys one Docker web service containing both FastAPI and the built Vite frontend, attached to the managed Render PostgreSQL database. Do not upload `.env` files to Render. Set these dashboard values after the service is created:
+
+```text
+FRONTEND_URL=https://cryptanium-backend.onrender.com
+GITHUB_REDIRECT_URI=https://cryptanium-backend.onrender.com/auth/callback
+GITHUB_CLIENT_ID=<GitHub OAuth client ID>
+GITHUB_CLIENT_SECRET=<GitHub OAuth client secret>
+```
+
+Register the exact `GITHUB_REDIRECT_URI` in GitHub OAuth settings. Render provides `DATABASE_URL` from the managed PostgreSQL database automatically. The frontend uses the same origin, so no `VITE_API_URL` is required. `SCANNER_MAX_CONCURRENCY=1` is intentional for the free tier.
+
 ### Manual development
 
 ```bash
