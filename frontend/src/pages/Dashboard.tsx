@@ -52,6 +52,7 @@ const Dashboard: React.FC = () => {
   const highFindings = findings.filter(f => f.severity === 'High' || f.severity === 'high').length;
   const medFindings = findings.filter(f => f.severity === 'Medium' || f.severity === 'medium').length;
   const lowFindings = findings.filter(f => f.severity === 'Low' || f.severity === 'low').length;
+  const activeRepository = repositories.find(repo => String(repo.id) === activeScanRepo);
 
   return (
     <div className="flex-1">
@@ -127,43 +128,37 @@ const Dashboard: React.FC = () => {
             )}
           </div>
           <div className="flex-1 space-y-md overflow-y-auto custom-scrollbar pr-1">
-            {repositories.length === 0 ? (
+            {!isScanning || !activeRepository ? (
               <div className="flex flex-col items-center justify-center h-32 text-on-surface-variant">
-                <span className="material-symbols-outlined text-[40px] block mb-2 opacity-30">folder_off</span>
-                <p className="text-sm">No repositories connected</p>
-                <p className="text-xs opacity-60">Login with GitHub to see your repositories</p>
+                <span className="material-symbols-outlined text-[40px] block mb-2 opacity-30">radar</span>
+                <p className="text-sm">No scan running</p>
+                <p className="text-xs opacity-60">Start a scan from the Repositories page</p>
               </div>
             ) : (
-              repositories.slice(0, 4).map(repo => (
-                <div key={repo.id} className="flex items-center justify-between p-sm bg-surface-container-high/40 rounded-lg border border-outline-variant/20 hover:border-primary/20 transition-all group">
+              <div className="flex items-center justify-between p-sm bg-surface-container-high/40 rounded-lg border border-primary/20 transition-all group">
                   <div className="flex items-center gap-md">
                     <div className="w-8 h-8 rounded bg-surface-container flex items-center justify-center border border-outline-variant/50">
                       <span className="material-symbols-outlined text-primary text-[18px]">source</span>
                     </div>
                     <div>
-                      <p className="font-bold text-sm text-on-background group-hover:text-primary transition-colors">{repo.name}</p>
-                      <p className="text-[11px] text-outline font-code-sm">{repo.default_branch}</p>
+                      <p className="font-bold text-sm text-on-background group-hover:text-primary transition-colors">{activeRepository.name}</p>
+                      <p className="text-[11px] text-outline font-code-sm">{activeRepository.default_branch}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-md">
-                    {activeScanRepo === String(repo.id) ? (
-                      <span className="flex items-center gap-1 text-secondary text-[11px] font-bold">
-                        <span className="material-symbols-outlined text-[14px] animate-spin">refresh</span> Scanning...
-                      </span>
-                    ) : (
-                      <span className="font-bold text-sm text-on-surface-variant">--</span>
-                    )}
+                    <span className="flex items-center gap-1 text-secondary text-[11px] font-bold">
+                      <span className="material-symbols-outlined text-[14px] animate-spin">refresh</span> Scanning...
+                    </span>
                     <button
-                      onClick={() => triggerScan(repo.id)}
-                      disabled={isScanning}
+                      onClick={() => triggerScan(activeRepository.id)}
+                      disabled
                       className="text-on-surface-variant hover:text-primary transition-colors disabled:opacity-40"
-                      title="Scan repository"
+                      title="Scan in progress"
                     >
                       <span className="material-symbols-outlined text-[18px]">play_arrow</span>
                     </button>
                   </div>
                 </div>
-              ))
             )}
           </div>
         </div>

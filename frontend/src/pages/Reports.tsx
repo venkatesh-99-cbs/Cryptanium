@@ -3,10 +3,10 @@ import { useSecurity } from '../context/SecurityContext';
 
 const Reports: React.FC = () => {
   const { reports, generateReport, repositories } = useSecurity();
-  const [generatingFor, setGeneratingFor] = useState<string | null>(null);
+  const [generatingFor, setGeneratingFor] = useState<string | number | null>(null);
   const [selectedReport, setSelectedReport] = useState<typeof reports[0] | null>(null);
 
-  const handleGenerate = async (repoId: string) => {
+  const handleGenerate = async (repoId: string | number) => {
     setGeneratingFor(repoId);
     await generateReport(repoId);
     setGeneratingFor(null);

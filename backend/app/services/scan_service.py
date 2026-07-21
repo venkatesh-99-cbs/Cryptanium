@@ -9,9 +9,11 @@ import json
 import logging
 import os
 import sys
+import threading
 from datetime import datetime, timezone
 from typing import Any
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.database.models import Repository, Scan
@@ -85,12 +87,30 @@ class ScanServiceError(Exception):
 class ScanService:
     """Service handling repository scan job lifecycle and persistence."""
 
+    # The scanner creates temporary workspaces and invokes CPU/network-heavy
+    # command-line tools. One active job keeps resource use predictable and
+    # makes the live-scan view unambiguous.
+    _active_scan_lock = threading.Lock()
+
     # ------------------------------------------------------------------
     # Main pipeline: execute a full scan end-to-end
     # ------------------------------------------------------------------
 
     def execute_scan(self, request: ScanRequest, db: Session) -> ScanResponse:
         """Run the full scan pipeline and persist results to the database."""
+        if not self._active_scan_lock.acquire(blocking=False):
+            raise ScanServiceError(
+                "Another repository is currently being scanned. Wait for it to finish before starting a new scan.",
+                status_code=409,
+            )
+
+        try:
+            return self._execute_scan(request=request, db=db)
+        finally:
+            self._active_scan_lock.release()
+
+    def _execute_scan(self, request: ScanRequest, db: Session) -> ScanResponse:
+        """Execute a scan while the process-wide single-scan lock is held."""
         repo_id_str = (
             str(request.repository_id).strip()
             if request.repository_id is not None
@@ -106,10 +126,35 @@ class ScanService:
                 status_code=400,
             )
 
-        identifier = repo_name_str or repo_id_str or "unknown-repository"
-        repo_display_name = repo_name_str or f"repo-{repo_id_str}"
+        repository: Repository | None = None
+        if repo_id_str:
+            filters = [Repository.github_repo_id == repo_id_str]
+            if repo_id_str.isdigit():
+                filters.append(Repository.id == int(repo_id_str))
+            repository = db.query(Repository).filter(or_(*filters)).first()
 
-        # Normalise to a full GitHub URL
+        # A frontend repository returned directly by GitHub carries its clone
+        # URL. Prefer the matching stored record so scan history uses the
+        # familiar owner/repository name instead of the raw URL.
+        if repository is None and repo_name_str and repo_name_str.startswith(("https://", "http://", "git@")):
+            repository = db.query(Repository).filter(Repository.clone_url == repo_name_str).first()
+
+        if repo_id_str and repository is None and not repo_name_str:
+            raise ScanServiceError(
+                f"Repository {repo_id_str} was not found. Sync GitHub repositories and try again.",
+                status_code=404,
+            )
+
+        identifier = (
+            repository.clone_url if repository and repository.clone_url
+            else repo_name_str or repo_id_str or "unknown-repository"
+        )
+        resolved_repository_id = str(repository.id) if repository else repo_id_str
+        repo_display_name = (
+            repository.full_name if repository else (repo_name_str or f"repo-{repo_id_str}")
+        )
+
+        # Normalise a shorthand owner/repository name to a full GitHub URL.
         target_url = identifier
         if not target_url.startswith(("https://", "http://", "git@")):
             target_url = f"https://github.com/{target_url}"
@@ -159,9 +204,10 @@ class ScanService:
         recommendations = ai_service.generate_recommendations(raw_findings, repo_display_name)
 
         # ── 5. Persist to database ───────────────────────────────────────
-        scan_status = report.status.value if hasattr(report.status, "value") else str(report.status)
+        report_status = report.status.value if hasattr(report.status, "value") else str(report.status)
+        scan_status = "completed" if report_status.lower() == "success" else report_status.lower()
         scan_record = Scan(
-            repository_id=repo_id_str,
+            repository_id=resolved_repository_id,
             repository_name=repo_display_name,
             status=scan_status.lower(),
             trust_score=trust_score,
@@ -172,11 +218,15 @@ class ScanService:
             low_severity_count=low_sev,
             findings_json=json.dumps(raw_findings),
             ai_summary=summary_data.get("executive_summary", ""),
+            ai_risk_level=summary_data.get("risk_level", "Unknown"),
+            ai_key_concerns=json.dumps(summary_data.get("key_concerns", [])),
             ai_recommendations=json.dumps(recommendations),
             started_at=report.started_at,
             completed_at=report.completed_at,
         )
         db.add(scan_record)
+        if repository is not None:
+            repository.last_scan = report.completed_at
         db.commit()
         db.refresh(scan_record)
 
@@ -191,7 +241,7 @@ class ScanService:
 
         return ScanResponse(
             scan_id=scan_record.id,
-            repository_id=repo_id_str,
+            repository_id=resolved_repository_id,
             repository_name=scan_record.repository_name,
             status=scan_record.status,
             trust_score=trust_score,

@@ -22,7 +22,10 @@ _OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 def _get_api_key() -> str | None:
     """Resolve API key from environment (supports comma-separated key rotation)."""
     raw = os.getenv("OPENROUTER_API_KEYS") or os.getenv("OPENROUTER_API_KEY", "")
-    keys = [k.strip() for k in raw.split(",") if k.strip()]
+    keys = [
+        key.strip() for key in raw.split(",")
+        if key.strip() and not key.strip().lower().startswith(("your_", "replace_", "changeme"))
+    ]
     return keys[0] if keys else None
 
 

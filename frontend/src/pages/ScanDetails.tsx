@@ -44,12 +44,12 @@ const ScanDetails: React.FC = () => {
     try {
       // Try fetching existing AI summary first
       const data = await apiClient.getAISummary(scan.scan_id);
-      setAiAnalysis(data as AIAnalysis);
+      setAiAnalysis(data as unknown as AIAnalysis);
     } catch {
       // Generate fresh AI analysis
       try {
         const data = await apiClient.analyzeScan(scan.scan_id);
-        setAiAnalysis(data as AIAnalysis);
+        setAiAnalysis(data as unknown as AIAnalysis);
       } catch (err) {
         setAiError(err instanceof Error ? err.message : 'Failed to generate AI analysis');
       }

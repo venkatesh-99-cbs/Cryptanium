@@ -42,6 +42,8 @@ def init_db(target_engine=None):
             "low_severity_count": "INTEGER DEFAULT 0",
             "findings_json": "TEXT",
             "ai_summary": "TEXT",
+            "ai_risk_level": "VARCHAR(50)",
+            "ai_key_concerns": "TEXT",
             "ai_recommendations": "TEXT",
             "started_at": "DATETIME",
             "completed_at": "DATETIME",

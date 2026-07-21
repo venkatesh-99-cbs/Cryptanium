@@ -3,6 +3,7 @@ import { apiClient } from '../services/api';
 
 // Type Definitions
 export interface Repository {
+  [key: string]: any;
   id: number;
   name: string;
   full_name: string;
@@ -16,17 +17,19 @@ export interface Repository {
 }
 
 export interface Finding {
+  [key: string]: any;
   id: string;
   severity: string;
   description: string;
   file_path: string;
   line_number: number;
   rule_id: string;
-  tool?: string;
+  tool: string;
   repoId?: string | number;
 }
 
 export interface Scan {
+  [key: string]: any;
   scan_id: number;
   repository_id: string | number;
   repository_name: string;
@@ -39,6 +42,7 @@ export interface Scan {
 }
 
 export interface Report {
+  [key: string]: any;
   id: number;
   scan_id: number;
   report_type: string;
@@ -60,8 +64,10 @@ export interface ChatMessage {
 }
 
 interface User {
+  [key: string]: any;
   id?: number;
   username: string;
+  name?: string;
   email?: string;
   avatar_url?: string;
 }
@@ -85,7 +91,7 @@ interface SecurityContextType {
   triggerScan: (repositoryId: number) => Promise<void>;
   sendChatMessage: (text: string) => void;
   exportReport: (repoName: string, format: 'PDF' | 'JSON' | 'CSV') => void;
-  generateReport: (scanId: number) => Promise<void>;
+  generateReport: (scanId: string | number) => Promise<void>;
   isAuthenticated: boolean;
   login: (code: string) => Promise<void>;
   logout: () => void;
@@ -125,7 +131,7 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const loadCurrentUser = async () => {
       try {
         if (isAuthenticated) {
-          const userData = await apiClient.getCurrentUser();
+      const userData = await apiClient.getCurrentUser();
           setUser(userData);
         }
       } catch (err) {
@@ -142,7 +148,7 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       setIsLoading(true);
       const data = await apiClient.getRepositories();
-      setRepositories(data || []);
+      setRepositories((data || []) as Repository[]);
       setError(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load repositories';
@@ -158,7 +164,7 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       setIsLoading(true);
       const data = await apiClient.getScans();
-      setScans(data || []);
+      setScans((data || []) as Scan[]);
       setError(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load scans';
@@ -174,7 +180,7 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       setIsLoading(true);
       const data = await apiClient.getReports();
-      setReports(data || []);
+      setReports((data || []) as Report[]);
       setError(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load reports';
@@ -317,7 +323,7 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   // Generate report
-  const generateReport = useCallback(async (scanId: number) => {
+  const generateReport = useCallback(async (scanId: string | number) => {
     try {
       setIsLoading(true);
       await apiClient.downloadReport(scanId);

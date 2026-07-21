@@ -147,6 +147,8 @@ def analyze_scan(
     # Persist AI results back to the scan record
     try:
         scan.ai_summary = summary_data.get("executive_summary", "")  # type: ignore[attr-defined]
+        scan.ai_risk_level = summary_data.get("risk_level", "Unknown")  # type: ignore[attr-defined]
+        scan.ai_key_concerns = json.dumps(summary_data.get("key_concerns", []))  # type: ignore[attr-defined]
         scan.ai_recommendations = json.dumps(recommendations)  # type: ignore[attr-defined]
         db.commit()
         db.refresh(scan)
@@ -184,8 +186,14 @@ def get_ai_summary(
         )
 
     ai_summary = getattr(scan, "ai_summary", None) or ""
+    ai_risk_level = getattr(scan, "ai_risk_level", None) or "Unknown"
+    ai_concerns_raw = getattr(scan, "ai_key_concerns", None) or "[]"
     ai_recs_raw = getattr(scan, "ai_recommendations", None) or "[]"
 
+    try:
+        key_concerns = json.loads(ai_concerns_raw)
+    except (json.JSONDecodeError, TypeError):
+        key_concerns = []
     try:
         recommendations = json.loads(ai_recs_raw)
     except (json.JSONDecodeError, TypeError):
@@ -200,7 +208,7 @@ def get_ai_summary(
     return AnalyzeResponse(
         scan_id=scan_id,
         executive_summary=ai_summary,
-        risk_level="Unknown",
-        key_concerns=[],
+        risk_level=ai_risk_level,
+        key_concerns=key_concerns,
         recommendations=recommendations,
     )

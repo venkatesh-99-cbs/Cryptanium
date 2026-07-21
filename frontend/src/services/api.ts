@@ -40,18 +40,18 @@ class APIClient {
 
   // Auth
   login(code: string, state?: string) {
-    return this.request<{ access_token: string; user: Record<string, unknown> }>(
+    return this.request<{ access_token: string; user: any }>(
       `/auth/callback?code=${encodeURIComponent(code)}${state ? `&state=${encodeURIComponent(state)}` : ''}`
     );
   }
-  getCurrentUser() { return this.request('/auth/me'); }
+  getCurrentUser() { return this.request<any>('/auth/me'); }
 
   // Repositories
-  getRepositories() { return this.request('/repositories'); }
+  getRepositories() { return this.request<any[]>('/repositories'); }
   syncRepositories() { return this.request('/repositories/sync', { method: 'POST' }); }
 
   // Scans
-  getScans() { return this.request('/scans'); }
+  getScans() { return this.request<any[]>('/scans'); }
   getScanById(id: number | string) { return this.request(`/scans/${id}`); }
   createScan(repository_id: string | number) {
     return this.request('/scan', {
@@ -67,7 +67,7 @@ class APIClient {
   }
 
   // Reports
-  getReports() { return this.request('/reports'); }
+  getReports() { return this.request<any[]>('/reports'); }
   downloadReport(id: string | number) { return this.url(`/reports/${id}/pdf`); }
 
   // AI Assistant

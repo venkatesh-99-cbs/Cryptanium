@@ -128,7 +128,8 @@ class AIService:
             )
         except RuntimeError as exc:
             # No API key configured
-            logger.warning("AI chat skipped: %s", exc)
+            logger.warning("AI chat using local fallback: %s", exc)
+            return _placeholder_chat(user_message, scan_context)
             return (
                 "⚠️ **AI features are not configured.** "
                 "To enable real AI responses, add your `OPENROUTER_API_KEY` to the `.env` file. "
@@ -136,6 +137,7 @@ class AIService:
             )
         except Exception as exc:
             logger.error("AI chat error: %s", exc)
+            return _placeholder_chat(user_message, scan_context)
             return (
                 "I encountered an error while processing your request. "
                 "Please try again in a moment, or check the server logs for details."
@@ -216,3 +218,35 @@ def _placeholder_recommendations(
         priority += 1
 
     return recs
+
+
+def _placeholder_chat(
+    user_message: str, scan_context: dict[str, Any] | None,
+) -> str:
+    """Provide useful scan-grounded guidance when an LLM provider is unavailable."""
+    if not scan_context:
+        return (
+            "The AI provider is not configured. Configure OPENROUTER_API_KEY to enable model responses, "
+            "or select a completed scan to receive deterministic scan guidance."
+        )
+
+    findings = scan_context.get("findings", [])
+    counts = _count_by_severity(findings)
+    repo = scan_context.get("repository_name", "this repository")
+    priority = next(
+        (finding for finding in findings if finding.get("severity") in {"Critical", "High"}),
+        findings[0] if findings else None,
+    )
+    response = (
+        f"For {repo}, the selected scan recorded {len(findings)} finding(s): "
+        f"{counts['Critical']} critical, {counts['High']} high, {counts['Medium']} medium, and {counts['Low']} low. "
+    )
+    if priority:
+        response += (
+            f"Start with the {priority.get('severity', 'highest')} severity issue "
+            f"\"{priority.get('description') or priority.get('rule_id') or 'security finding'}\" "
+            f"in {priority.get('file_path') or 'the affected code'}. "
+        )
+    else:
+        response += "No individual findings were persisted for this scan. "
+    return response + f"Local scan guidance for your question: {user_message.strip()}"
