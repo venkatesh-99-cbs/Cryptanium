@@ -22,11 +22,11 @@ class TestRepositoriesAPI(unittest.TestCase):
 
     def test_get_repositories_invalid_token(self):
         with patch(
-            "backend.app.api.repositories.GitHubRepositoryService.fetch_user_repositories",
+            "app.api.repositories.GitHubRepositoryService.fetch_user_repositories",
             new_callable=AsyncMock,
             side_effect=GitHubRepositoryError("Invalid or expired GitHub access token.", 401),
         ):
-            headers = {"Authorization": "Bearer invalid_token"}
+            headers = {"x-github-token": "invalid_token"}
             response = client.get("/repositories", headers=headers)
             self.assertEqual(response.status_code, 401)
             self.assertEqual(response.json()["detail"], "Invalid or expired GitHub access token.")
@@ -52,11 +52,11 @@ class TestRepositoriesAPI(unittest.TestCase):
         ]
 
         with patch(
-            "backend.app.api.repositories.GitHubRepositoryService.fetch_user_repositories",
+            "app.api.repositories.GitHubRepositoryService.fetch_user_repositories",
             new_callable=AsyncMock,
             return_value=mock_repos,
         ) as mock_fetch:
-            headers = {"Authorization": "Bearer valid_github_access_token"}
+            headers = {"x-github-token": "valid_github_access_token"}
             response = client.get("/repositories", headers=headers)
 
             self.assertEqual(response.status_code, 200)

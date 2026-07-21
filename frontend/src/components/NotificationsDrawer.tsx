@@ -16,17 +16,17 @@ const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({ isOpen, onClo
     ...scans.slice(0, 3).map((s) => ({
       id: `scan-${s.id}`,
       type: 'scan',
-      title: `Scan Completed: ${s.repoName}`,
-      desc: `Analysis finished on main branch. Trust score: ${s.trustScore}/100.`,
+      title: `Scan Completed: ${s.repository_name || s.repoName || 'Repository'}`,
+      desc: `Analysis finished. Trust score: ${s.trust_score ?? s.trustScore ?? 0}/100.`,
       time: s.scannedAt,
-      icon: s.trustScore >= 80 ? 'check_circle' : 'warning',
-      color: s.trustScore >= 80 ? 'text-secondary' : 'text-tertiary'
+      icon: (s.trust_score ?? s.trustScore ?? 0) >= 80 ? 'check_circle' : 'warning',
+      color: (s.trust_score ?? s.trustScore ?? 0) >= 80 ? 'text-secondary' : 'text-tertiary'
     })),
     ...findings.filter((f) => f.severity === 'Critical').slice(0, 2).map((f) => ({
       id: `finding-${f.id}`,
       type: 'finding',
-      title: `Critical Alert in ${f.repoName}`,
-      desc: `${f.title} detected at ${f.filePath} (line ${f.line}).`,
+      title: `Critical Alert in ${f.repoName || 'Repository'}`,
+      desc: `${f.description || f.title || 'Security issue'} detected at ${f.file_path || f.filePath || 'unknown file'} (line ${f.line_number || f.line || 'unknown'}).`,
       time: f.date,
       icon: 'dangerous',
       color: 'text-error'
@@ -65,9 +65,9 @@ const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({ isOpen, onClo
                 <p>No new notifications</p>
               </div>
             ) : (
-              notifications.map((n) => (
+              notifications.map((n, index) => (
                 <div 
-                  key={n.id} 
+                  key={n.id || `notification-${index}`}
                   className="p-md bg-surface-container-high/40 rounded-xl border border-outline-variant/30 hover:border-primary/20 transition-all flex gap-md group"
                 >
                   <span className={`material-symbols-outlined shrink-0 ${n.color} text-[24px]`}>{n.icon}</span>

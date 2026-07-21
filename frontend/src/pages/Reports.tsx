@@ -71,9 +71,9 @@ const Reports: React.FC = () => {
 
           {/* Reports Cards */}
           <div className="flex flex-col gap-md">
-            {reports.map(report => (
+            {reports.map((report, index) => (
               <div
-                key={report.id}
+                key={report.id ?? report.scan_id ?? `report-${index}`}
                 className={`glass-card rounded-xl p-lg cursor-pointer transition-all neon-glow ${selectedReport?.id === report.id ? 'border border-primary/40 bg-primary/5' : ''}`}
                 onClick={() => setSelectedReport(report)}
               >

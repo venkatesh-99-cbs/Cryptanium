@@ -7,10 +7,11 @@ const AddRepositoryModal: React.FC<{ isOpen: boolean; onClose: () => void }> = (
   if (!isOpen) return null;
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    const repo = repositories.find(item => String(item.id) === selectedId);
+    const repo = repositories.find(item => String(item.id ?? item.github_repo_id ?? item.full_name) === selectedId);
     if (!repo) return;
-    const selected = JSON.parse(localStorage.getItem('cryptanium_selected_repositories') || '[]') as number[];
-    if (!selected.includes(repo.id)) selected.push(repo.id);
+    const selected = JSON.parse(localStorage.getItem('cryptanium_selected_repositories') || '[]') as Array<string | number>;
+    const repoKey = repo.id ?? repo.github_repo_id ?? repo.full_name;
+    if (!selected.includes(repoKey)) selected.push(repoKey);
     localStorage.setItem('cryptanium_selected_repositories', JSON.stringify(selected));
     await addRepository(repo.clone_url || '');
     setSelectedId(''); onClose();
@@ -23,7 +24,7 @@ const AddRepositoryModal: React.FC<{ isOpen: boolean; onClose: () => void }> = (
       <form onSubmit={submit} className="space-y-lg">
         <select aria-label="GitHub repository" required value={selectedId} onChange={e => setSelectedId(e.target.value)} className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-md py-3 text-on-background">
           <option value="">Choose a repository</option>
-          {repositories.map(repo => <option key={repo.id} value={repo.id}>{repo.full_name || repo.name}</option>)}
+          {repositories.map(repo => <option key={repo.id ?? repo.github_repo_id ?? repo.full_name} value={repo.id ?? repo.github_repo_id ?? repo.full_name}>{repo.full_name || repo.name}</option>)}
         </select>
         <div className="flex gap-md"><button type="button" onClick={onClose} className="flex-1 py-2 rounded-lg border border-outline-variant">Cancel</button><button type="submit" className="flex-1 py-2 bg-primary text-on-primary rounded-lg font-bold">Add Repository</button></div>
       </form>

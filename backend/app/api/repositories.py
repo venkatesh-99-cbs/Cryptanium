@@ -68,8 +68,12 @@ async def list_repositories(
         gh_service = GitHubRepositoryService()
         try:
             return await gh_service.fetch_user_repositories(access_token=raw_token)
-        except GitHubRepositoryError as exc:
-            raise HTTPException(status_code=exc.status_code, detail=exc.message)
+        except Exception as exc:
+            # Keep API behavior stable even when tests/container startup load
+            # the package through either ``app`` or ``backend.app``.
+            status_code = getattr(exc, "status_code", 502)
+            detail = getattr(exc, "message", str(exc)) or "GitHub repository request failed."
+            raise HTTPException(status_code=status_code, detail=detail) from exc
 
     db_repos = repo_service.list_repositories(db=db)
     if not db_repos and not raw_token:

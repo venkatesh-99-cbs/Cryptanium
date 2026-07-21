@@ -69,11 +69,16 @@ class GitHubRepositoryService:
 
             repositories.append(
                 RepositoryResponse(
+                    id=int(repo["id"]) if repo.get("id") is not None else None,
+                    github_repo_id=str(repo.get("id", "")) or None,
                     name=repo.get("name", ""),
                     owner=owner_login,
+                    full_name=repo.get("full_name") or (f"{owner_login}/{repo.get('name', '')}" if owner_login else repo.get("name", "")),
                     private=bool(repo.get("private", False)),
                     language=repo.get("language"),
                     default_branch=repo.get("default_branch", "main"),
+                    visibility="private" if repo.get("private") else "public",
+                    clone_url=repo.get("clone_url"),
                     updated_at=repo.get("updated_at"),
                 )
             )

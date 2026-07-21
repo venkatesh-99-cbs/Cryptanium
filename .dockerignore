@@ -1,6 +1,14 @@
 __pycache__/
 **/__pycache__/
 **/.pytest_cache/
+.test-temp
+.test-temp/
+.test-temp/pytest-of-VENKATESH
+.test-temp/pytest-of-VENKATESH/
+**/.test-temp
+**/.test-temp/
+**/pytest-of-*
+**/pytest-of-*/
 **/.mypy_cache/
 **/.ruff_cache/
 *.pyc

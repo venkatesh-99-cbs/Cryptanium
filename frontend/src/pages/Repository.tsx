@@ -6,7 +6,7 @@ const Repository: React.FC = () => {
   const { repositories, scans, triggerScan, isScanning, activeScanRepo, loadRepositories, isLoading, addRepository } = useSecurity();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
-  const [repoUrl, setRepoUrl] = useState('');
+  const [selectedRepoId, setSelectedRepoId] = useState('');
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
@@ -32,11 +32,12 @@ const Repository: React.FC = () => {
   };
 
   const handleAddRepository = async () => {
-    if (!repoUrl.trim()) return;
+    const repo = repositories.find(item => String(item.id ?? item.github_repo_id ?? item.full_name) === selectedRepoId);
+    if (!repo) return;
     setAdding(true);
     try {
-      await addRepository(repoUrl);
-      setRepoUrl('');
+      await addRepository(repo.clone_url || repo.full_name);
+      setSelectedRepoId('');
     } finally {
       setAdding(false);
     }
@@ -74,16 +75,13 @@ const Repository: React.FC = () => {
           />
         </div>
         <div className="flex flex-1 md:max-w-md gap-sm">
-          <input
-            type="text"
-            placeholder="Add GitHub repo URL"
-            value={repoUrl}
-            onChange={e => setRepoUrl(e.target.value)}
-            className="flex-1 bg-surface-container-lowest border border-outline-variant rounded-lg px-md py-2 text-sm focus:border-primary focus:ring-0 outline-none transition-all"
-          />
+          <select aria-label="Select GitHub repository" value={selectedRepoId} onChange={e => setSelectedRepoId(e.target.value)} className="flex-1 bg-surface-container-lowest border border-outline-variant rounded-lg px-md py-2 text-sm focus:border-primary focus:ring-0 outline-none transition-all">
+            <option value="">Select a GitHub repository</option>
+            {repositories.map(repo => <option key={repo.id ?? repo.github_repo_id ?? repo.full_name} value={repo.id ?? repo.github_repo_id ?? repo.full_name}>{repo.full_name || repo.name}</option>)}
+          </select>
           <button
             onClick={() => void handleAddRepository()}
-            disabled={adding || !repoUrl.trim()}
+            disabled={adding || !selectedRepoId}
             className="flex items-center gap-xs px-md py-2 rounded-lg bg-primary text-white text-sm disabled:opacity-40"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
@@ -123,7 +121,7 @@ const Repository: React.FC = () => {
 
             return (
               <div
-                key={repo.id}
+                key={repo.id ?? repo.github_repo_id ?? repo.full_name}
                 className="glass-card p-md flex items-center justify-between rounded-xl transition-all cursor-pointer hover:border-primary/20 group"
                 onClick={() => latestScan ? navigate(`/scans/${latestScan.scan_id}`) : undefined}
               >

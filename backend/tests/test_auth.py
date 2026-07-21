@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.core.config import settings
+from app.core.oauth_state import create_state
 from app.core.security import decode_access_token
 from app.database.base import Base
 from app.database.database import get_db
@@ -88,7 +89,7 @@ def test_auth_callback_success():
         return_value=mock_user_data,
     ) as mock_fetch:
 
-        response = client.get("/auth/callback?code=valid_auth_code")
+        response = client.get(f"/auth/callback?code=valid_auth_code&state={create_state()}")
 
         assert response.status_code == 200
         data = response.json()

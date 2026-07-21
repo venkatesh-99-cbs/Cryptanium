@@ -1,4 +1,7 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || window.location.origin;
+// Vite runs on :5173 while the API runs on :8000 during local development.
+// Production uses the same-origin API served by FastAPI (or an explicit URL).
+const API_BASE_URL = import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? 'http://localhost:8000' : window.location.origin);
 
 class APIClient {
   private token = localStorage.getItem('cryptanium_token');
