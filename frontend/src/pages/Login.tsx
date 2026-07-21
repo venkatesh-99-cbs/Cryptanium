@@ -35,7 +35,8 @@ const Login: React.FC = () => {
 
   const handleGitHub = () => {
     setGithubLoading(true);
-    window.location.assign(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/auth/login`);
+    const apiBase = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8000' : window.location.origin);
+    window.location.assign(`${apiBase}/auth/login`);
   };
 
   return (

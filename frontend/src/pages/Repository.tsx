@@ -8,12 +8,18 @@ const Repository: React.FC = () => {
   const [search, setSearch] = useState('');
   const [selectedRepoId, setSelectedRepoId] = useState('');
   const [adding, setAdding] = useState(false);
+  const [connectedRepoIds, setConnectedRepoIds] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('cryptanium_selected_repositories') || '[]').map(String); } catch { return []; }
+  });
 
   useEffect(() => {
     void loadRepositories();
   }, []);
 
-  const filteredRepos = repositories.filter(r =>
+  const visibleRepos = connectedRepoIds.length
+    ? repositories.filter(r => connectedRepoIds.includes(String(r.id ?? r.github_repo_id ?? r.full_name)))
+    : [];
+  const filteredRepos = visibleRepos.filter(r =>
     (r.name || '').toLowerCase().includes(search.toLowerCase()) ||
     (r.full_name || '').toLowerCase().includes(search.toLowerCase())
   );
@@ -37,6 +43,10 @@ const Repository: React.FC = () => {
     setAdding(true);
     try {
       await addRepository(repo.clone_url || repo.full_name);
+      const key = String(repo.id ?? repo.github_repo_id ?? repo.full_name);
+      const next = connectedRepoIds.includes(key) ? connectedRepoIds : [...connectedRepoIds, key];
+      localStorage.setItem('cryptanium_selected_repositories', JSON.stringify(next));
+      setConnectedRepoIds(next);
       setSelectedRepoId('');
     } finally {
       setAdding(false);
@@ -54,11 +64,11 @@ const Repository: React.FC = () => {
               ? 'Loading repositories...'
               : repositories.length === 0
               ? 'Login with GitHub to see your repositories'
-              : `${repositories.length} repositories connected`}
+              : `${visibleRepos.length} repositories connected`}
           </p>
         </div>
         <span className="px-3 py-1 rounded-full bg-surface-container text-on-surface-variant text-[11px] font-label-caps border border-outline-variant">
-          TOTAL: {repositories.length}
+          TOTAL: {visibleRepos.length}
         </span>
       </div>
 
@@ -103,11 +113,11 @@ const Repository: React.FC = () => {
         <div className="glass-card rounded-xl p-xl text-center text-on-surface-variant">
           <span className="material-symbols-outlined text-[64px] opacity-30 block mb-md">folder_off</span>
           <p className="font-bold text-on-background text-lg">
-            {isLoading ? 'Loading...' : repositories.length === 0 ? 'No Repositories Found' : 'No Matches'}
+            {isLoading ? 'Loading...' : visibleRepos.length === 0 ? 'No Repositories Selected' : 'No Matches'}
           </p>
           <p className="text-sm mt-2 opacity-60">
-            {repositories.length === 0
-              ? 'Login with GitHub OAuth to connect your repositories.'
+            {visibleRepos.length === 0
+              ? 'Use Add Repository to select a repository from your GitHub account.'
               : 'Try adjusting your search.'}
           </p>
         </div>

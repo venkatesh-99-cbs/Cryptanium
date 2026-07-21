@@ -42,7 +42,7 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
 
   const hasData = scans.length > 0;
-  const completedScans = scans.filter(s => s.trust_score && s.trust_score > 0);
+  const completedScans = scans.filter(s => ['completed', 'success'].includes((s.status || '').toLowerCase()));
   const avgScore = completedScans.length
     ? Math.round(completedScans.reduce((a, s) => a + (s.trust_score || 0), 0) / completedScans.length)
     : 0;
@@ -78,7 +78,7 @@ const Dashboard: React.FC = () => {
             <span className="material-symbols-outlined text-primary text-[20px]">info</span>
           </div>
           <div className="flex flex-col md:flex-row items-center gap-xl">
-            {avgScore > 0 ? <TrustGauge score={avgScore} /> : <EmptyGauge />}
+            {completedScans.length > 0 ? <TrustGauge score={avgScore} /> : <EmptyGauge />}
             <div className="flex-1 w-full space-y-4">
               {isLoading ? (
                 <div className="space-y-3">

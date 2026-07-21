@@ -21,7 +21,9 @@ const SUGGESTED_PROMPTS = [
 const AIAssistant: React.FC = () => {
   const { scans } = useSecurity();
 
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    try { return JSON.parse(localStorage.getItem('cryptanium_ai_messages') || '[]'); } catch { return []; }
+  });
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [selectedScanId, setSelectedScanId] = useState<number | null>(null);
@@ -37,6 +39,11 @@ const AIAssistant: React.FC = () => {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
+
+  // Keep the conversation when the user changes modules or refreshes the page.
+  useEffect(() => {
+    localStorage.setItem('cryptanium_ai_messages', JSON.stringify(messages.slice(-50)));
+  }, [messages]);
 
   const addMessage = (msg: Message) => setMessages(prev => [...prev, msg]);
 

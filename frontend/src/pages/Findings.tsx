@@ -9,15 +9,17 @@ const Findings: React.FC = () => {
   const { findings } = useSecurity();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
+  const [repositoryFilter, setRepositoryFilter] = useState('All');
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>('All');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
   const [selectedFinding, setSelectedFinding] = useState<typeof findings[0] | null>(null);
 
   const filtered = findings.filter(f => {
-    const matchSearch = f.title.toLowerCase().includes(search.toLowerCase()) || f.tool.toLowerCase().includes(search.toLowerCase()) || f.filePath.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = (f.description || f.title || '').toLowerCase().includes(search.toLowerCase()) || (f.tool || '').toLowerCase().includes(search.toLowerCase()) || (f.file_path || f.filePath || '').toLowerCase().includes(search.toLowerCase());
     const matchSev = severityFilter === 'All' || f.severity === severityFilter;
     const matchStatus = statusFilter === 'All' || f.status === statusFilter;
-    return matchSearch && matchSev && matchStatus;
+    const matchRepository = repositoryFilter === 'All' || String(f.repoName || f.repoId) === repositoryFilter;
+    return matchSearch && matchSev && matchStatus && matchRepository;
   });
 
   const severityCounts = {
@@ -80,6 +82,10 @@ const Findings: React.FC = () => {
               onChange={e => setSearch(e.target.value)}
             />
           </div>
+          <select aria-label="Filter findings by repository" value={repositoryFilter} onChange={e => setRepositoryFilter(e.target.value)} className="bg-surface-container-lowest border border-outline-variant rounded-lg px-md py-2 text-sm text-on-surface outline-none">
+            <option value="All">All repositories</option>
+            {Array.from(new Set(findings.map(f => String(f.repoName || f.repoId)).filter(Boolean))).map(repo => <option key={repo} value={repo}>{repo}</option>)}
+          </select>
           <select
             className="bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-2 text-body-md focus:border-primary focus:ring-0 outline-none text-on-background"
             value={statusFilter}
@@ -115,7 +121,7 @@ const Findings: React.FC = () => {
                   onClick={() => setSelectedFinding(finding)}
                 >
                   <td className="py-3 px-lg">
-                    <p className="font-bold text-sm text-on-background">{finding.title}</p>
+                    <p className="font-bold text-sm text-on-background">{finding.description || finding.title || 'Security finding'}</p>
                     <p className="text-outline text-[11px] mt-0.5 truncate max-w-[180px]">{finding.description}</p>
                   </td>
                   <td className="py-3 px-lg">
@@ -134,7 +140,7 @@ const Findings: React.FC = () => {
                     </span>
                   </td>
                   <td className="py-3 px-lg">
-                    <code className="text-[11px] text-primary font-code-sm">{finding.filePath}</code>
+                    <code className="text-[11px] text-primary font-code-sm">{finding.file_path || finding.filePath || 'Unknown file'}</code>
                   </td>
                 </tr>
               ))}
@@ -159,7 +165,7 @@ const Findings: React.FC = () => {
               <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold mb-sm ${getSeverityClass(selectedFinding.severity)}`}>
                 {selectedFinding.severity}
               </span>
-              <h3 className="font-bold text-on-background text-base leading-snug">{selectedFinding.title}</h3>
+              <h3 className="font-bold text-on-background text-base leading-snug">{selectedFinding.description || selectedFinding.title || 'Security finding'}</h3>
             </div>
             <button onClick={() => setSelectedFinding(null)} className="text-outline hover:text-on-surface transition-colors shrink-0">
               <span className="material-symbols-outlined">close</span>
@@ -187,8 +193,8 @@ const Findings: React.FC = () => {
             <div className="border-t border-outline-variant pt-md">
               <h4 className="font-label-caps text-[11px] uppercase tracking-wider text-on-surface-variant mb-sm">Affected File</h4>
               <div className="bg-background rounded-lg p-sm border border-outline-variant">
-                <code className="text-primary font-code-sm text-sm">{selectedFinding.filePath}</code>
-                <span className="text-outline ml-md">Line {selectedFinding.line}</span>
+                <code className="text-primary font-code-sm text-sm">{selectedFinding.file_path || selectedFinding.filePath || 'Unknown file'}</code>
+                <span className="text-outline ml-md">Line {selectedFinding.line_number || selectedFinding.line || 0}</span>
               </div>
             </div>
 
@@ -201,9 +207,9 @@ const Findings: React.FC = () => {
               <h4 className="font-label-caps text-[11px] uppercase tracking-wider text-on-surface-variant mb-sm">Code Context</h4>
               <div className="bg-background rounded-lg p-md border border-outline-variant font-code-sm text-xs overflow-x-auto custom-scrollbar">
                 <pre className="text-[#a8b1c9]">
-                  <span className="text-outline">{selectedFinding.line - 1} | </span><span className="text-on-surface-variant">{`// vulnerable code context`}</span>{'\n'}
-                  <span className="text-error">{selectedFinding.line} | </span><span className="text-tertiary">{'const result = query(`SELECT * FROM users WHERE id=${userId}`)'}</span>{'\n'}
-                  <span className="text-outline">{selectedFinding.line + 1} | </span><span className="text-on-surface-variant">{`return result;`}</span>
+                  <span className="text-outline">{(selectedFinding.line_number || selectedFinding.line || 0) - 1} | </span><span className="text-on-surface-variant">{`// vulnerable code context`}</span>{'\n'}
+                  <span className="text-error">{selectedFinding.line_number || selectedFinding.line || 0} | </span><span className="text-tertiary">{'const result = query(`SELECT * FROM users WHERE id=${userId}`)'}</span>{'\n'}
+                  <span className="text-outline">{(selectedFinding.line_number || selectedFinding.line || 0) + 1} | </span><span className="text-on-surface-variant">{`return result;`}</span>
                 </pre>
               </div>
             </div>

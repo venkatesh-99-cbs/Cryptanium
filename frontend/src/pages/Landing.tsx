@@ -30,13 +30,10 @@ const Landing: React.FC = () => {
     <div className="min-h-screen bg-[#0b0e14] text-on-background font-body-md">
       {/* Header Navigation */}
       <header className="fixed top-0 right-0 w-full z-50 bg-background/80 backdrop-blur-xl border-b border-outline-variant px-margin-desktop h-16 flex justify-between items-center">
-        <div className="flex items-center gap-sm">
-          <div className="w-8 h-8 bg-primary-container/20 rounded flex items-center justify-center">
-            <span className="material-symbols-outlined text-primary text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>security</span>
-          </div>
-          <img src="/cyyptanium.jpeg" alt="Cryptanium" className="w-10 h-10 rounded object-cover" />
+        <Link to="/" className="flex items-center gap-sm" aria-label="Cryptanium home">
+          <img src="/cyyptanium.jpeg" alt="Cryptanium security logo" className="w-10 h-10 rounded-lg object-cover border border-primary/30" />
           <span className="text-headline-md font-headline-md font-bold tracking-tight text-on-background">CRYPTANIUM</span>
-        </div>
+        </Link>
         <nav className="hidden md:flex items-center gap-xl">
           <a href="#features" className="font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-all">Features</a>
           <a href="#how-it-works" className="font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-all">How It Works</a>
@@ -97,6 +94,27 @@ const Landing: React.FC = () => {
                   <span className="material-symbols-outlined text-[32px]">{tool.icon}</span>
                 </div>
                 <span className="font-label-caps text-label-caps text-on-surface">{tool.name}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* How It Works */}
+        <section id="how-it-works" className="max-w-7xl mx-auto px-margin-desktop pb-24 scroll-mt-24">
+          <div className="text-center mb-xl">
+            <span className="font-label-caps text-label-caps text-primary tracking-[0.2em] uppercase">Simple security workflow</span>
+            <h2 className="text-headline-lg font-headline-lg text-on-background mt-sm">From repository to clear action</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+            {[
+              ['01', 'Connect GitHub', 'Choose a repository from your GitHub account without copying source code into the browser.', 'link'],
+              ['02', 'Run six focused scanners', 'Cryptanium orchestrates SAST, secrets, dependency, and lint checks in one controlled scan.', 'play_circle'],
+              ['03', 'Fix what matters first', 'Review normalized findings, trust score, AI context, and downloadable reports from one workspace.', 'task_alt'],
+            ].map(([number, title, description, icon]) => (
+              <div key={number} className="glass-card rounded-xl p-lg border border-outline-variant/50">
+                <div className="flex items-center justify-between mb-lg"><span className="text-primary font-code-sm text-sm">{number}</span><span className="material-symbols-outlined text-secondary">{icon}</span></div>
+                <h3 className="font-bold text-on-background text-lg mb-sm">{title}</h3>
+                <p className="text-on-surface-variant leading-relaxed">{description}</p>
               </div>
             ))}
           </div>
@@ -167,6 +185,18 @@ const Landing: React.FC = () => {
             </button>
           </div>
         </section>
+
+        {/* FAQ */}
+        <section id="faq" className="max-w-3xl mx-auto px-margin-desktop pb-24 scroll-mt-24">
+          <div className="text-center mb-xl"><span className="font-label-caps text-label-caps text-on-surface-variant tracking-[0.2em] uppercase">FAQ</span><h2 className="text-headline-lg font-headline-lg text-on-background mt-sm">Questions, answered</h2></div>
+          <div className="space-y-sm">
+            {[
+              ['Which tools are included?', 'Semgrep, Bandit, Gitleaks, pip-audit, npm audit, and ESLint are available through the scan orchestrator.'],
+              ['Does Cryptanium store my source code?', 'Scanning uses a temporary workspace. Results are normalized and stored for your account; temporary source workspaces are cleaned up after scanning.'],
+              ['Can I run it locally?', 'Yes. Docker Compose runs the frontend and backend locally, while production can run as one Docker service on Render.'],
+            ].map(([question, answer]) => <details key={question} className="glass-card rounded-xl p-md border border-outline-variant/50 group"><summary className="cursor-pointer font-bold text-on-background list-none flex justify-between items-center">{question}<span className="material-symbols-outlined text-primary group-open:rotate-180 transition-transform">expand_more</span></summary><p className="text-on-surface-variant leading-relaxed mt-md pr-xl">{answer}</p></details>)}
+          </div>
+        </section>
       </main>
 
       {/* Footer */}
@@ -174,18 +204,16 @@ const Landing: React.FC = () => {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center px-margin-desktop gap-lg">
           <div className="flex flex-col gap-xs items-center md:items-start">
             <div className="flex items-center gap-xs">
-              <div className="w-6 h-6 bg-primary-container/20 rounded flex items-center justify-center">
-                <span className="material-symbols-outlined text-primary text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>security</span>
-              </div>
+              <img src="/cyyptanium.jpeg" alt="Cryptanium security logo" className="w-7 h-7 rounded object-cover" />
               <span className="font-bold text-lg">CRYPTANIUM</span>
             </div>
             <p className="font-body-md text-body-md text-on-surface-variant">© 2024 Cryptanium Security. All rights reserved.</p>
           </div>
           <div className="flex flex-wrap justify-center gap-xl">
-            <a href="#" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">Terms of Service</a>
-            <a href="#" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">Privacy Policy</a>
-            <a href="#" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">Contact Support</a>
-            <a href="#" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">Documentation</a>
+            <a href="#features" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">Capabilities</a>
+            <a href="#how-it-works" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">How It Works</a>
+            <a href="#tools" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">Integrations</a>
+            <a href="#faq" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">FAQ</a>
           </div>
         </div>
       </footer>

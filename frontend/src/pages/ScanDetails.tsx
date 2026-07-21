@@ -33,6 +33,20 @@ const ScanDetails: React.FC = () => {
   // Load AI analysis when Summary/AI tab is active
   useEffect(() => {
     if ((activeTab === 'ai' || activeTab === 'summary') && scan && !aiAnalysis && !aiLoading) {
+      const cached = localStorage.getItem(`cryptanium_ai_analysis_${scan.scan_id}`);
+      if (cached) {
+        try { setAiAnalysis(JSON.parse(cached)); return; } catch { localStorage.removeItem(`cryptanium_ai_analysis_${scan.scan_id}`); }
+      }
+      if (scan.ai_summary) {
+        setAiAnalysis({
+          scan_id: scan.scan_id,
+          executive_summary: scan.ai_summary,
+          risk_level: scan.ai_risk_level || 'Unknown',
+          key_concerns: scan.ai_key_concerns || [],
+          recommendations: scan.ai_recommendations || [],
+        } as unknown as AIAnalysis);
+        return;
+      }
       void loadAIAnalysis();
     }
   }, [activeTab, scan]);
@@ -45,11 +59,13 @@ const ScanDetails: React.FC = () => {
       // Try fetching existing AI summary first
       const data = await apiClient.getAISummary(scan.scan_id);
       setAiAnalysis(data as unknown as AIAnalysis);
+      localStorage.setItem(`cryptanium_ai_analysis_${scan.scan_id}`, JSON.stringify(data));
     } catch {
       // Generate fresh AI analysis
       try {
         const data = await apiClient.analyzeScan(scan.scan_id);
         setAiAnalysis(data as unknown as AIAnalysis);
+        localStorage.setItem(`cryptanium_ai_analysis_${scan.scan_id}`, JSON.stringify(data));
       } catch (err) {
         setAiError(err instanceof Error ? err.message : 'Failed to generate AI analysis');
       }

@@ -3,7 +3,7 @@ import { useSecurity } from '../context/SecurityContext';
 import { apiClient } from '../services/api';
 
 const Reports: React.FC = () => {
-  const { reports, generateReport, repositories } = useSecurity();
+  const { reports, generateReport, repositories, scans } = useSecurity();
   const [generatingFor, setGeneratingFor] = useState<string | number | null>(null);
   const [selectedReport, setSelectedReport] = useState<typeof reports[0] | null>(null);
 
@@ -41,7 +41,7 @@ const Reports: React.FC = () => {
           <p className="text-on-surface-variant text-sm mt-1">Generate and download comprehensive security reports for stakeholders.</p>
         </div>
         <button
-          onClick={() => repositories[0] && handleGenerate(repositories[0].id)}
+          onClick={() => scans[0] && handleGenerate(scans[0].scan_id)}
           className="flex items-center gap-sm bg-[#7B61FF] text-white px-xl py-md rounded-lg font-bold shadow-[0_0_15px_rgba(123,97,255,0.3)] hover:shadow-[0_0_20px_rgba(123,97,255,0.5)] transition-all"
         >
           <span className="material-symbols-outlined">add</span> Generate Report
@@ -136,23 +136,23 @@ const Reports: React.FC = () => {
             ))}
 
             {/* Generate for repos */}
-            {repositories.filter(r => !reports.find(rp => rp.repoId === r.id)).map(repo => (
-              <div key={repo.id} className="glass-card rounded-xl p-lg border border-dashed border-outline-variant/50 flex items-center justify-between opacity-60">
+            {scans.filter(scan => !reports.find(report => String(report.scan_id) === String(scan.scan_id))).map(scan => (
+              <div key={scan.scan_id} className="glass-card rounded-xl p-lg border border-dashed border-outline-variant/50 flex items-center justify-between opacity-60">
                 <div className="flex items-center gap-md">
                   <div className="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center">
-                    <span className="material-symbols-outlined text-outline">{repo.icon}</span>
+                    <span className="material-symbols-outlined text-outline">description</span>
                   </div>
                   <div>
-                    <h3 className="font-bold text-on-surface-variant">{repo.name}</h3>
+                    <h3 className="font-bold text-on-surface-variant">{scan.repository_name}</h3>
                     <p className="text-sm text-on-surface-variant/60">No report generated yet</p>
                   </div>
                 </div>
                 <button
-                  onClick={() => handleGenerate(repo.id)}
-                  disabled={generatingFor === repo.id}
+                  onClick={() => handleGenerate(scan.scan_id)}
+                  disabled={generatingFor === scan.scan_id}
                   className="flex items-center gap-xs px-md py-sm border border-outline-variant text-on-surface-variant rounded-lg text-sm hover:text-primary hover:border-primary transition-all"
                 >
-                  {generatingFor === repo.id ? (
+                  {generatingFor === scan.scan_id ? (
                     <><span className="material-symbols-outlined animate-spin text-[18px]">refresh</span> Generating...</>
                   ) : (
                     <><span className="material-symbols-outlined text-[18px]">add</span> Generate</>

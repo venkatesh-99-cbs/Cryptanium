@@ -83,6 +83,7 @@ interface SecurityContextType {
   activeScanRepo: string | null;
   isLoading: boolean;
   error: string | null;
+  toastMessage: string | null;
   loadRepositories: () => Promise<void>;
   loadScans: () => Promise<void>;
   loadReports: () => Promise<void>;
@@ -103,17 +104,27 @@ const SecurityContext = createContext<SecurityContextType | undefined>(undefined
 export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [repositories, setRepositories] = useState<Repository[]>([]);
-  const [findings, setFindings] = useState<Finding[]>([]);
-  const [scans, setScans] = useState<Scan[]>([]);
-  const [reports, setReports] = useState<Report[]>([]);
+  const [findings, setFindings] = useState<Finding[]>(() => { try { return JSON.parse(localStorage.getItem('cryptanium_findings') || '[]'); } catch { return []; } });
+  const [scans, setScans] = useState<Scan[]>(() => { try { return JSON.parse(localStorage.getItem('cryptanium_scans') || '[]'); } catch { return []; } });
+  const [reports, setReports] = useState<Report[]>(() => { try { return JSON.parse(localStorage.getItem('cryptanium_reports') || '[]'); } catch { return []; } });
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [activeScanRepo, setActiveScanRepo] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return !!localStorage.getItem('cryptanium_token');
   });
+
+  useEffect(() => { if (scans.length) localStorage.setItem('cryptanium_scans', JSON.stringify(scans)); }, [scans]);
+  useEffect(() => { if (findings.length) localStorage.setItem('cryptanium_findings', JSON.stringify(findings)); }, [findings]);
+  useEffect(() => { if (reports.length) localStorage.setItem('cryptanium_reports', JSON.stringify(reports)); }, [reports]);
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timer = window.setTimeout(() => setToastMessage(null), 4200);
+    return () => window.clearTimeout(timer);
+  }, [toastMessage]);
 
   // OAuth returns the JWT in the URL fragment so it is not sent to the server.
   useEffect(() => {
@@ -146,7 +157,6 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Load repositories
   const loadRepositories = useCallback(async () => {
     try {
-      setIsLoading(true);
       const data = await apiClient.getRepositories();
       setRepositories((data || []) as Repository[]);
       setError(null);
@@ -154,24 +164,33 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const message = err instanceof Error ? err.message : 'Failed to load repositories';
       setError(message);
       console.error('Error loading repositories:', err);
-    } finally {
-      setIsLoading(false);
     }
   }, []);
 
   // Load scans
   const loadScans = useCallback(async () => {
     try {
-      setIsLoading(true);
       const data = await apiClient.getScans();
-      setScans((data || []) as Scan[]);
+      const loadedScans = (data || []) as Scan[];
+      setScans(loadedScans);
+      // Findings are persisted inside each scan response. Restore them on every
+      // refresh so Overview and Findings remain accurate after navigation.
+      const restoredFindings = loadedScans.flatMap((scan: any) =>
+        (scan.findings || []).map((finding: any, index: number) => ({
+          ...finding,
+          id: finding.id || `${scan.scan_id}-${index}`,
+          repoId: scan.repository_id,
+          repoName: scan.repository_name,
+          status: finding.status || 'Open',
+          detectedAt: finding.detectedAt || scan.created_at,
+        }))
+      );
+      setFindings(restoredFindings);
       setError(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load scans';
       setError(message);
       console.error('Error loading scans:', err);
-    } finally {
-      setIsLoading(false);
     }
   }, []);
 
@@ -189,7 +208,6 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const loadReports = useCallback(async () => {
     try {
-      setIsLoading(true);
       const data = await apiClient.getReports();
       const normalizedReports = (data || []).map((report: any) => {
         const scan = scans.find((item) => String(item.scan_id) === String(report.scan_id));
@@ -218,8 +236,6 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const message = err instanceof Error ? err.message : 'Failed to load reports';
       setError(message);
       console.error('Error loading reports:', err);
-    } finally {
-      setIsLoading(false);
     }
   }, [repositories, scans]);
 
@@ -241,7 +257,10 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     if (isAuthenticated) void loadDashboard();
-  }, [isAuthenticated, loadDashboard]);
+    // Run once per authenticated session. Including loadDashboard here causes
+    // a dependency loop because it is recreated when repositories/scans load.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
 
   // Sync repositories from GitHub
   const syncRepositories = useCallback(async () => {
@@ -282,6 +301,7 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       await apiClient.addRepository(repoPayload);
       await loadRepositories();
+      setToastMessage(`${repoName} was added successfully.`);
       setError(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to add repository';
@@ -299,7 +319,7 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setActiveScanRepo(String(repositoryId));
 
       // Look up the repo to get its clone URL
-      const repo = repositories.find(r => r.id === repositoryId);
+      const repo = repositories.find(r => String(r.id ?? r.github_repo_id ?? r.full_name) === String(repositoryId));
       let scanResult: any;
 
       if (repo?.clone_url) {
@@ -443,6 +463,7 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         activeScanRepo,
         isLoading,
         error,
+        toastMessage,
         loadRepositories,
         loadScans,
         loadReports,

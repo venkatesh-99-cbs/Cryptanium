@@ -6,7 +6,7 @@ import NotificationsDrawer from '../components/NotificationsDrawer';
 import HelpModal from '../components/HelpModal';
 
 const DashboardLayout: React.FC = () => {
-  const { user, logout } = useSecurity();
+  const { user, logout, toastMessage } = useSecurity();
   const navigate = useNavigate();
   const [isAddRepoOpen, setIsAddRepoOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -29,6 +29,12 @@ const DashboardLayout: React.FC = () => {
 
   return (
     <div className="bg-[#0b0e14] text-[#e1e2eb] min-h-screen font-body-md relative overflow-x-hidden">
+      {toastMessage && (
+        <div role="status" className="fixed right-6 top-20 z-[70] flex items-center gap-sm rounded-xl border border-secondary/30 bg-[#10251a] px-lg py-md text-secondary shadow-2xl">
+          <span className="material-symbols-outlined">check_circle</span>
+          <span className="text-sm font-bold">{toastMessage}</span>
+        </div>
+      )}
       {/* SideNavBar Rail */}
       <aside className="fixed h-full left-0 w-[240px] z-40 border-r border-outline-variant bg-surface-container-low flex flex-col py-lg hidden md:flex">
         <div className="px-md mb-xl flex items-center gap-sm">
